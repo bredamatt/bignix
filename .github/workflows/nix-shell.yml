@@ -3,10 +3,28 @@
 # compiles and runs. Windows users run the Linux shell under WSL2.
 name: nix-shell
 
+# Runs on pull requests and on master, only when the shell's inputs change.
+# Run it by hand from the Actions tab for any other branch.
 on:
   push:
+    branches: [master]
+    paths:
+      - shell.nix
+      - nix/**
+      - bigraph-tools
+      - .github/workflows/nix-shell.yml
   pull_request:
+    paths:
+      - shell.nix
+      - nix/**
+      - bigraph-tools
+      - .github/workflows/nix-shell.yml
   workflow_dispatch:
+
+# A new push to the same branch or pull request cancels the run in progress.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read
@@ -25,8 +43,9 @@ jobs:
           - runner: macos-latest
             system: aarch64-darwin
     runs-on: ${{ matrix.runner }}
-    # bigrapher is built from source on every run (it is not in the public
-    # binary cache); the rest comes from cache.nixos.org.
+    # bigrapher, and on Linux a few OCaml tools, are built from source on
+    # every run (they are not in the public binary cache); the rest comes
+    # from cache.nixos.org.
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v7
