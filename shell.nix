@@ -20,9 +20,11 @@ let
     inherit pkgs;
     src = ./bigraph-tools;
   };
-  # mCRL2 is marked broken on macOS in nixpkgs 25.05 and fixed in 26.05.
-  # Take only that package from 26.05, so the OCaml toolchain above (and
-  # the bigraph-tools build) keeps its versions.
+  # The model checkers come from nixpkgs 26.05. In 25.05, mCRL2 is marked
+  # broken on macOS, and PRISM 4.8.1 is not in the binary cache for Linux
+  # and fails to build there (its bundled lp_solve does not compile with
+  # 25.05's GCC). Take only these packages from 26.05, so the OCaml
+  # toolchain above (and the bigraph-tools build) keeps its versions.
   pkgs-26_05 = import (builtins.fetchTarball {
     url = "https://github.com/NixOS/nixpkgs/archive/26.05.tar.gz";
     sha256 = "0am8xx09fx5yf2p0wb001v0jx1g5hrfb76h4r37xph378jgk7pcr";
@@ -48,7 +50,7 @@ pkgs.mkShell {
     pkgs.jq # scripts/mcrl2-check.sh converts bigrapher's JSON with it
     # The PRISM model checker (`prism`, `xprism`). Note that nixpkgs'
     # `prism` package is an unrelated program.
-    pkgs.prism-model-checker
+    pkgs-26_05.prism-model-checker
     # The mCRL2 toolset: modal mu-calculus checks over labelled transition
     # systems, so properties can name the rules (actions) that fired.
     mcrl2
