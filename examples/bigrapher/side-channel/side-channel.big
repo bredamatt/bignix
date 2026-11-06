@@ -1,0 +1,199 @@
+# Side channels of an NVL72 rack, and where a device must be to use them.
+#
+# After Fig. 1 of Sevegnani & Calder, "BigraphER: Rewriting and Analysis
+# Engine for Bigraphs" (CAV 2016, p. 495). There, signal coverage is drawn
+# as overlapping circles, and a machine inside two circles is one node with
+# two parents (bigraphs with sharing). Here each circle is how far one side
+# channel of the rack reaches, and the shared nodes are the spots where an
+# attacker's device can be.
+#
+# Fields (what a device in them can measure):
+#   Traffic   the rack's traffic out of the router: packet sizes and timing
+#             follow the tokens it streams (cf. Weiss et al., USENIX
+#             Security 2024)
+#   Acoustic  coil whine and fan noise that follow GPU load. It carries
+#             through the server-room wall into the corridor (cf. Genkin et
+#             al., CRYPTO 2014)
+#   EM        near-field emanation, only right next to the rack (cf. Batina
+#             et al., USENIX Security 2019)
+# The reach of each field is an assumption, not a measurement:
+#
+#               Traffic  Acoustic  EM
+#   Wan            x
+#   Lobby
+#   Corridor                x
+#   Aisle                   x
+#   RackSide                x       x
+#
+# The attacker has two devices: a Tap on the WAN path and a Probe carried
+# in through the lobby. A device in a live field takes one measurement of
+# it, which goes to the Attacker.
+#
+# Protocols, switched with constants (0 = off, 1 = on):
+#   pad   the router sends fixed-size frames at a fixed rate, so its
+#         traffic shows no token timing: the Traffic field is masked
+#         before anything leaves.
+#   door  devices are screened at the server-room door: the probe cannot
+#         enter the room.
+#   mask  a device detected in the acoustic field makes the rack mask its
+#         acoustic signature (noise injection) before the device can take
+#         a measurement. This assumes detection covers the whole field.
+# Pad and mask are rules in a higher priority class
+# (the protocol acts first), and door is a guard on the attacker's move.
+#
+# Run with all three constants set, e.g.
+#   bigrapher full -c pad=1,door=1,mask=1 -t out/ts -f svg models/examples/side_channel.big
+
+# --- Signature -------------------------------------------------------------
+
+# Where things are
+ctrl Internet = 0;
+ctrl Building = 0;
+ctrl ServerRoom = 0;
+ctrl Spot = 0;               # where a device can be, tagged with one of:
+atomic ctrl Wan = 0;
+atomic ctrl Lobby = 0;
+atomic ctrl Corridor = 0;
+atomic ctrl Aisle = 0;
+atomic ctrl RackSide = 0;
+
+# The rack and the router that connects it to the outside
+ctrl NVL72 = 2;              # links: uplink to the router, its leakage
+ctrl Router = 2;             # links: uplink from the rack, the WAN
+
+# Fields, linked to what they leak from (like the S nodes in Fig. 1)
+ctrl Traffic = 1;
+ctrl Acoustic = 1;
+ctrl EM = 1;
+atomic ctrl Live = 0;        # the field leaks
+atomic ctrl Masked = 0;      # a protocol has masked it
+
+# The attacker, its devices, and what it has measured
+ctrl Attacker = 0;
+atomic ctrl Tap = 0;
+atomic ctrl Probe = 0;
+atomic ctrl TokenTiming = 0; # from Traffic
+atomic ctrl CoilWhine = 0;   # from Acoustic
+atomic ctrl EMTrace = 0;     # from EM
+
+# Protocol switches, set with -c pad=..,door=..,mask=..
+atomic fun ctrl Padding(on) = 0;
+atomic fun ctrl Screening(on) = 0;
+atomic fun ctrl Masking(on) = 0;
+
+# --- Initial state ---------------------------------------------------------
+
+# share (spots) by (which sites each spot goes to) in (places and fields).
+# Sites, left to right: 0 Internet; 1, 2 Building; 3, 4 ServerRoom;
+# 5 Traffic; 6, 7, 8 Acoustic; 9 EM. So RackSide (4, 8, 9) has three
+# parents: the server room, the acoustic field and the EM field.
+big datacentre =
+  /up /leak (
+  share
+    ( Spot.(Wan | Tap)
+    || Spot.(Lobby | Probe)
+    || Spot.Corridor
+    || Spot.Aisle
+    || Spot.RackSide )
+  by ([{0, 5}, {1}, {2, 6}, {3, 7}, {4, 8, 9}], 10)
+  in
+    ( Internet.id
+    | Building.(id | id
+        | ServerRoom.(id | id
+            | NVL72{up, leak}.Masking(mask)
+            | Router{up, wan}.Padding(pad)
+            | Screening(door)))
+    | Traffic{wan}.(Live | id)
+    | Acoustic{leak}.(Live | id | id | id)
+    | EM{leak}.(Live | id)
+    | Attacker.1 ));
+
+# --- A device inside a field -----------------------------------------------
+
+# The field has the device's spot among its children. The spot's other
+# parents (its room, other fields) are outside the pattern, so the spot is
+# also shared with an open region on the right that the context fills in.
+big tap_in_live_traffic =
+  share (Spot.(Tap | id) || id) by ([{0, 2}, {1}], 3)
+  in (Traffic{wan}.(Live | id | id) || id);
+
+big probe_in_live_acoustic =
+  share (Spot.(Probe | id) || id) by ([{0, 2}, {1}], 3)
+  in (Acoustic{leak}.(Live | id | id) || id);
+
+big probe_in_masked_acoustic =
+  share (Spot.(Probe | id) || id) by ([{0, 2}, {1}], 3)
+  in (Acoustic{leak}.(Masked | id | id) || id);
+
+big probe_in_live_em =
+  share (Spot.(Probe | id) || id) by ([{0, 2}, {1}], 3)
+  in (EM{leak}.(Live | id | id) || id);
+
+# --- Attacker [uncontrollable] ---------------------------------------------
+
+# The probe walks towards the rack. Moves only go one way: backing off
+# reveals nothing new, since measurements and masking are kept.
+react enter_corridor =
+  Spot.(Lobby | Probe | id) || Spot.(Corridor | id)
+  -->
+  Spot.(Lobby | id) || Spot.(Corridor | Probe | id);
+
+# Blocked when the door screens devices (door=1).
+react enter_room =
+  Spot.(Corridor | Probe | id) || Spot.(Aisle | id) || Screening(0)
+  -->
+  Spot.(Corridor | id) || Spot.(Aisle | Probe | id) || Screening(0);
+
+react approach_rack =
+  Spot.(Aisle | Probe | id) || Spot.(RackSide | id)
+  -->
+  Spot.(Aisle | id) || Spot.(RackSide | Probe | id);
+
+# One measurement per field, sent to the attacker.
+react measure_traffic =
+  tap_in_live_traffic || Attacker.id
+  -->
+  tap_in_live_traffic || Attacker.(TokenTiming | id)
+  if !TokenTiming in param;
+
+react measure_acoustic =
+  probe_in_live_acoustic || Attacker.id
+  -->
+  probe_in_live_acoustic || Attacker.(CoilWhine | id)
+  if !CoilWhine in param;
+
+react measure_em =
+  probe_in_live_em || Attacker.id
+  -->
+  probe_in_live_em || Attacker.(EMTrace | id)
+  if !EMTrace in param;
+
+# --- Protocols [controller, higher priority] -------------------------------
+
+# Padding is configuration, so it applies before any traffic leaves.
+react pad_traffic =
+  Traffic{wan}.(Live | id) || Padding(1)
+  -->
+  Traffic{wan}.(Masked | id) || Padding(1);
+
+# Masking is adaptive: it fires only once a device is in the field.
+react mask_acoustic =
+  probe_in_live_acoustic || Masking(1)
+  -->
+  probe_in_masked_acoustic || Masking(1);
+
+# --- Predicates ------------------------------------------------------------
+
+big leak_traffic = TokenTiming;
+big leak_acoustic = CoilWhine;
+big leak_em = EMTrace;
+big probe_at_rack = Spot.(RackSide | Probe | id);
+
+begin brs
+  init datacentre;
+  # The first class has the highest priority.
+  rules = [ { pad_traffic, mask_acoustic },
+            { enter_corridor, enter_room, approach_rack,
+              measure_traffic, measure_acoustic, measure_em } ];
+  preds = { leak_traffic, leak_acoustic, leak_em, probe_at_rack };
+end
