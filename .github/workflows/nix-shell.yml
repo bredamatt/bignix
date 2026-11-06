@@ -1,0 +1,63 @@
+# Builds the Nix shell on Linux (x86_64, aarch64) and macOS, then checks
+# that the tools are on PATH and that a program using the bigraph library
+# compiles and runs. Windows users run the Linux shell under WSL2.
+name: nix-shell
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  shell:
+    name: ${{ matrix.system }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            system: x86_64-linux
+          - runner: ubuntu-24.04-arm
+            system: aarch64-linux
+          - runner: macos-latest
+            system: aarch64-darwin
+    runs-on: ${{ matrix.runner }}
+    # bigrapher is built from source on every run (it is not in the public
+    # binary cache); the rest comes from cache.nixos.org.
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: true
+
+      - uses: cachix/install-nix-action@v31
+
+      - name: Build the shell
+        run: nix-shell --run true
+
+      - name: Check tools are on PATH
+        run: |
+          # Single quotes: the inner shell, inside nix-shell, expands the variables.
+          # shellcheck disable=SC2016
+          nix-shell --run '
+            set -e
+            for tool in ocaml dune bigrapher prism mcrl22lps pbessolve dot jq; do
+              command -v "$tool"
+            done
+          '
+
+      - name: Compile and run a program that uses bigraph
+        run: |
+          # Single quotes: the inner shell, inside nix-shell, expands the variables.
+          # shellcheck disable=SC2016
+          nix-shell --run '
+            set -euo pipefail
+            dir=$(mktemp -d)
+            echo "(lang dune 3.0)" > "$dir/dune-project"
+            echo "(executable (name main) (libraries bigraph))" > "$dir/dune"
+            echo "let () = print_endline (Bigraph.Big.to_string Bigraph.Big.one)" > "$dir/main.ml"
+            dune exec --root "$dir" ./main.exe
+          '
