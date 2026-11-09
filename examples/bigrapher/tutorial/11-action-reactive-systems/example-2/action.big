@@ -1,0 +1,33 @@
+ctrl Token = 0;
+ctrl Result = 0;
+ctrl Empty = 0;
+
+
+big has_token = Token.1;
+big has_result = Result.1;
+
+# Source class 1: produce a token, or do nothing
+react produce = Empty.1 -[1]-> Token.1;
+react idle = Empty.1 -[1]-> Empty.1;
+
+# Source class 2: consume the token
+react succeed = Token.1 -[8]-> Result.1;
+react fail = Token.1 -[2]-> Empty.1;
+
+# Instantaneous: result decays back to empty;
+react decay = Result.1 -[1]-> Empty.1;
+
+big s0 = Empty.1;
+
+begin abrs
+    init s0;
+
+    rules = [ {produce, idle}, {succeed, fail}, (decay) ];
+
+    actions = [
+        act[1] = {produce, succeed, decay},
+        pass[0] = {idle, fail}
+    ];
+
+    preds = { has_token[1], has_result[5] };
+end

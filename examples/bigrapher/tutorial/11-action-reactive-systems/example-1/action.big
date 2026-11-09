@@ -1,0 +1,18 @@
+ctrl A = 0;
+ctrl B = 0;
+ctrl C = 0;
+
+big a = A.1;
+big b = B.1;
+big c = C.1;
+
+react to_b = a -[7]-> b;
+react to_c = a -[3]-> c;
+react stay = a -[1]-> a;
+
+
+begin abrs
+    init a;
+    rules = [ {to_b, to_c, stay} ];
+    actions = [ choose[2] = {to_b, to_c}, wait[0] = {stay} ]; # An action choose contains the rules to+b and to_c with reward 2, whilst the entry wait uses the second action wait with reward 0. Note that renormalisation occurs. Since stay is only used in the wait action. Therefore, the transition probability for to-b and to_c are 7/(7+3) and 3/(7+3) respectively.  Because this is an expliit non-deterministic choice between choose and wait actions, when an action is chosen, the next successor is chosen probabilistically over the normalised weights.
+end

@@ -1,0 +1,27 @@
+ctrl Token = 0;
+ctrl Success = 0;
+ctrl Failure = 0;
+ctrl Done = 0;
+
+big token = Token.1;
+big success = Success.1;
+big failure = Failure.1;
+big done = Done.1;
+
+big has_success = Success.1;
+big has_failure = Failure.1;
+
+# First class: try the op (rate-based choice)
+react try_ok = token -[0.7]-> success;
+react try_fail = token -[0.3]-> failure;
+
+# Second class: reocver from failure, or complete
+react recover = failure -[0.4]-> token;
+react give_up = failure -[0.1]-> done;
+react complete = success -[0.5]-> done;
+
+begin sbrs
+    init token;
+    rules = [ {try_ok, try_fail}, {recover, give_up, complete} ];
+    preds = { has_success[10], has_failure[1] }; # Similar to pbrs
+end

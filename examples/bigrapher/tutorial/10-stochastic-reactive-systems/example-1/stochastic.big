@@ -1,0 +1,18 @@
+ctrl A = 0;
+ctrl B = 0;
+ctrl C = 0;
+
+big a = A.1;
+big b = B.1;
+big c = C.1;
+
+# Sojourn time in state a when transitioning to b or c. The sum is 3.0, which is the exit rate from a.
+# If there are n distinct occurrences of a rule, then the occurrences contribute n x r to the exit rate
+react to_b = a -[1.0]-> b;
+react to_c = a -[2.0]-> c;
+
+begin sbrs
+    init a;
+    rules = [ {to_b, to_c} ];
+end
+

@@ -1,0 +1,28 @@
+# Reaction rules can have conditions which restrict when a rule is applicable by checking for a predicate bigraph in either the matched context ,or the matched parameter.
+
+ctrl Room = 0;
+atomic ctrl Person = 0;
+atomic ctrl Alarm = 0;
+atomic ctrl Safe = 0;
+atomic ctrl Done = 0;
+
+react evacuate = 
+    Person --> Done 
+    if Alarm in ctx;
+
+react stay =
+    Person --> Safe
+    if !Alarm in ctx;
+
+react clear =
+    Room.Person --> Room.Done
+    if Person in param;
+
+big s0 =
+    Room.Person | Alarm;
+
+begin brs
+    init s0;
+    rules = [ { evacuate, stay, clear } ];
+end
+

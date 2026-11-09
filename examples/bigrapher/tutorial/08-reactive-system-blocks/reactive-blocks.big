@@ -1,0 +1,27 @@
+# Reactive system blocks 
+ctrl A = 1;
+ctrl B = 0;
+atomic ctrl C = 0;
+ctrl D = 1;
+
+big open = A{x};
+big duplicated = D{x}.(id | id);
+big closed = /x D{x} | {x};
+big gone = B.1 | {x};
+
+big has_d = D{x};
+big has_b = B.1;
+
+react duplicate = open --> duplicated @[0,0];
+react close = open --> closed;
+react remove = open --> gone @[];
+
+# init
+big s0 = open * C;
+
+begin brs
+    init s0;
+    rules = [ { duplicate, close}, (remove) ]; # here there are priority classes - duplicate and close have higher priority than remove. After some rule is applied, rule selection starts again from the highest to the lowest. Rules in parenthesis, such as (remove), are instantaneous, or reducing classes. These are applied until no rule in the class is applicable, but do not appear as ordinary transitions in the generated transition system. Note that instantaneous classes should be terminating and confluent. BigraphER does not currently check this condition. It is the modeller's responsibility.
+    preds = { has_d[10], has_b[1] }; # Predicates to be checked over states, with rewards 10 for has_d, and 1 for has_b. For each reachable state, BigraphER checks which predicates hold and sums their rewards to produce teh state reward for that state, and can also be exported for PRISM in .rews format.
+end
+

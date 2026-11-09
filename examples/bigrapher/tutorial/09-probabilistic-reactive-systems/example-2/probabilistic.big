@@ -1,0 +1,36 @@
+ctrl Token = 0;
+ctrl Success = 0;
+ctrl Failure = 0;
+ctrl Done = 0;
+
+big token = Token.1;
+big success = Success.1;
+big failure = Failure.1;
+big done = Done.1;
+
+big has_success = Success.1;
+big has_failure = Failure.1;
+
+# First class, try the operation with weighted choice
+react try_ok = token -[7]-> success;
+react try_fail = token -[3]-> failure;
+
+# The above has a combined value of 10 ( 7 + 3)
+# try_ok has 7 / (7 + 3) = 0.7 probability 
+# try_fail has 3 / (7 + 3) probability  = 0.3
+# Note how these transitions are from the token state
+
+# Second class - recover from failure
+react recover = failure -[4]-> token;
+react give_up = failure -[1]-> done;
+
+# Same thing, but these start from the failure state.
+
+# Instantaneous: success is absorbed into done
+react absorb = success -[1]-> done;
+
+begin pbrs
+    init token;
+    rules = [ {try_ok, try_fail}, {recover, give_up}, (absorb) ];
+    preds = { has_success[10], has_failure[1]};
+end

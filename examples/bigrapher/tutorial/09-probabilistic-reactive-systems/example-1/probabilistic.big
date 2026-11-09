@@ -1,0 +1,16 @@
+ctrl A = 0;
+ctrl B = 0;
+ctrl C = 0;
+
+
+big a = A.1;
+big b = B.1;
+big c = C.1;
+
+react to_b = a -[7]-> b;
+react to_c = a -[3]-> c;
+
+begin pbrs
+    init a;
+    rules = [ { to_b, to_c } ];
+end
