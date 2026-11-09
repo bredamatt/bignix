@@ -1,0 +1,22 @@
+# These describe how a bigraph can evolve
+
+ctrl A = 1;
+ctrl B = 0;
+atomic ctrl C = 0;
+ctrl D = 1;
+
+big open = A{x};
+big closed = /x D{x} | {x};
+big gone = B.1 | {x};
+
+react close = open --> closed;
+react remove = open --> gone @[];
+
+# initial
+big s0 = open * C;
+
+begin brs
+    init s0;
+    rules = [ {close, remove} ];
+end
+

@@ -1,0 +1,1253 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bigraph Expressions</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=STIX+Two+Text:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+/* Layout: a worked-example sheet. Each declaration is one row: source, algebra and type on the left, BigraphER's drawing on the right.
+   Colour follows the drawings: ink is the place graph, green is the link graph, so name sets in the maths are green too. */
+:root {
+  --paper: #fbfcfa;
+  --panel: #f1f4f0;
+  --ink: #1a1e1b;
+  --muted: #59635b;
+  --rule: #d8ded8;
+  --link: #1b7a35;
+  --site: #b8bfb9;
+  --error: #a3352b;
+  --font-math: "STIX Two Text", "STIX Two Math", "Cambria Math", "Latin Modern Roman", Georgia, serif;
+  --font-body: "IBM Plex Sans", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --font-code: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --step--1: 0.875rem;
+  --step-1: 1.3rem;
+  --step-2: 1.75rem;
+  --step-3: clamp(2.2rem, 5vw, 3.1rem);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #111412;
+    --panel: #1a1e1b;
+    --ink: #e1e6e1;
+    --muted: #98a29a;
+    --rule: #2c332e;
+    --link: #55c477;
+    --site: #59615b;
+    --error: #ef8b7b;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #111412;
+  --panel: #1a1e1b;
+  --ink: #e1e6e1;
+  --muted: #98a29a;
+  --rule: #2c332e;
+  --link: #55c477;
+  --site: #59615b;
+  --error: #ef8b7b;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+.wrap {
+  max-width: 68rem;
+  margin-inline: auto;
+  padding-left: max(clamp(16px, 4vw, 2.5rem), env(safe-area-inset-left, 0px));
+  padding-right: max(clamp(16px, 4vw, 2.5rem), env(safe-area-inset-right, 0px));
+  padding-block: 3rem 4rem;
+}
+h1, h2, h3, h4 { margin: 0; font-family: var(--font-math); font-weight: 600; line-height: 1.2; text-wrap: balance; }
+h1 { font-size: var(--step-3); letter-spacing: -0.01em; }
+h2 { font-size: var(--step-2); }
+h3 { font-size: var(--step-1); }
+h4 { font-size: 1rem; font-family: var(--font-body); font-weight: 500; }
+p { margin: 0; max-width: 65ch; }
+a { color: var(--link); text-underline-offset: 0.2em; }
+a:focus-visible { outline: 2px solid var(--link); outline-offset: 2px; border-radius: 2px; }
+
+/* Maths */
+.m, .facts dd, .eqs, .typecheck { font-family: var(--font-math); font-variant-numeric: lining-nums; }
+.m i, .facts i, .eqs i, .typecheck i, td i, th i { font-style: italic; }
+i { font-family: var(--font-math); font-size: 1.05em; }
+.nw { white-space: nowrap; }
+sub { font-size: 0.72em; line-height: 0; vertical-align: -0.3em; }
+sub sub { font-size: 0.85em; }
+.nm { color: var(--link); }
+.ctl { font-family: var(--font-body); font-style: normal; font-size: 0.9em; }
+
+code { font-family: var(--font-code); font-size: 0.86em; background: var(--panel); padding: 0.1em 0.35em; border-radius: 3px; }
+pre { margin: 0; background: var(--panel); padding: 0.75rem 1rem; border-radius: 4px; overflow-x: auto; }
+pre code { background: none; padding: 0; font-size: 0.875rem; line-height: 1.55; }
+
+/* Header */
+.top { display: grid; gap: 1rem; }
+.eyebrow { font-family: var(--font-code); font-size: 0.78rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.lede { font-size: 1.08rem; }
+.toc { display: flex; flex-wrap: wrap; gap: 0.4rem 1.25rem; font-size: var(--step--1); padding-top: 0.25rem; }
+
+.chain {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.75rem 1rem;
+  max-width: 50rem;
+  margin-top: 1.25rem;
+  padding-block: 1.5rem;
+  border-block: 1px solid var(--rule);
+}
+.op { display: grid; justify-items: center; gap: 0.2rem; }
+.glyph { font-family: var(--font-math); font-size: 3rem; line-height: 1; }
+.opname { font-size: var(--step--1); color: var(--muted); }
+.step { display: grid; gap: 0.4rem; text-align: center; font-size: var(--step--1); line-height: 1.3; color: var(--ink); }
+.step--link { color: var(--link); }
+.shaft { position: relative; display: block; height: 1.5px; margin-right: 6px; background: currentColor; }
+.shaft::after {
+  content: "";
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  width: 0;
+  height: 0;
+  transform: translateY(-50%);
+  border-left: 9px solid currentColor;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+}
+.stepsub { color: var(--muted); font-size: 0.78rem; }
+
+/* Sections */
+section { display: grid; gap: 1.25rem; padding-top: 3.5rem; }
+section > h3 { padding-top: 1rem; }
+
+/* Notation */
+.notation { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 2rem 3rem; align-items: start; }
+.defs { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.85rem 1.25rem; margin: 0; }
+.defs dt { font-family: var(--font-math); font-size: 1.15rem; white-space: nowrap; }
+.defs dd { margin: 0; }
+.legend { display: grid; gap: 0.75rem; }
+.legend ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.6rem; }
+.legend li { display: grid; grid-template-columns: 44px minmax(0, 1fr); gap: 0.85rem; align-items: center; }
+.legend svg { display: block; }
+.lg-box { fill: none; stroke: var(--ink); stroke-dasharray: 5 2; }
+.lg-site { fill: var(--site); }
+.lg-node { fill: none; stroke: var(--ink); }
+.lg-line { stroke: var(--ink); stroke-width: 1.2; }
+.lg-head { fill: var(--ink); }
+.lg-link { fill: none; stroke: var(--link); stroke-width: 1.6; }
+.lg-t { fill: var(--ink); font-family: var(--font-math); font-size: 12px; text-anchor: middle; }
+.lg-t--sans { font-family: var(--font-body); font-size: 11px; }
+.hint { font-size: var(--step--1); color: var(--muted); }
+
+/* Products */
+.table-wrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; min-width: 38rem; font-size: 0.95rem; font-variant-numeric: tabular-nums; }
+th, td { text-align: left; padding: 0.6rem 0.9rem; border-bottom: 1px solid var(--rule); vertical-align: baseline; }
+thead th { font-family: var(--font-body); font-size: 0.74rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+tbody th { font-weight: 400; }
+td.m, th.m { font-size: 1.08rem; }
+.chg-link { color: var(--link); font-weight: 600; }
+.chg-place { font-weight: 600; }
+
+.eqs { display: grid; gap: 0.6rem; font-size: 1.15rem; padding: 1rem 1.25rem; background: var(--panel); border-radius: 6px; overflow-x: auto; }
+.eqs p { max-width: none; white-space: nowrap; }
+.explain { display: grid; gap: 0.75rem; }
+
+.typecheck {
+  display: grid;
+  grid-template-columns: repeat(7, max-content);
+  row-gap: 0.4rem;
+  align-items: baseline;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  font-size: 1.1rem;
+  padding: 1rem 1.25rem;
+  background: var(--panel);
+  border-radius: 6px;
+}
+.typecheck > span { padding-inline: 0.3rem; }
+.typecheck .tc-total { border-top: 1px solid var(--ink); padding-top: 0.4rem; }
+.typecheck .match { background: color-mix(in srgb, var(--link) 16%, transparent); border-radius: 3px; }
+.span3 { grid-column: span 3; text-align: center; }
+
+.notes { display: grid; gap: 0.5rem; margin: 0; padding-left: 1.2rem; max-width: 65ch; }
+
+/* Declarations */
+.decl {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr);
+  gap: 1.25rem 2.5rem;
+  align-items: start;
+  padding-block: 2rem;
+  border-top: 1px solid var(--rule);
+}
+.decl > h3 { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.2rem 0.6rem; }
+.decl > h3 code { font-size: 1.05rem; font-weight: 500; }
+.decl > h3 .m { font-weight: 400; }
+.decl-text { display: grid; gap: 1.1rem; }
+.facts { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.5rem 1.25rem; margin: 0; }
+.facts dt { font-size: 0.72rem; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); padding-top: 0.3rem; }
+.facts dd { margin: 0; font-size: 1.07rem; overflow-x: auto; }
+.facts dd.prose { font-family: var(--font-body); font-size: 0.95rem; color: var(--muted); }
+
+figure.dg {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 0.6rem;
+  min-height: 14rem;
+  padding: 1.25rem 1rem 0.75rem;
+  background: var(--panel);
+  border-radius: 6px;
+}
+.dg svg { width: calc(var(--w) * 1.6px); max-width: 100%; height: auto; overflow: visible; }
+.dg figcaption { font-family: var(--font-code); font-size: 0.78rem; color: var(--muted); text-align: center; }
+.dg [stroke="black"] { stroke: var(--ink); }
+.dg [fill="black"] { fill: var(--ink); }
+.dg polygon[fill="white"] { fill: none; }
+.dg [stroke="green"] { stroke: var(--link); stroke-width: 1.5; }
+.dg [fill="gray"] { fill: var(--site); }
+.dg text { fill: var(--ink); }
+.dg text[font-family="serif"] { font-family: var(--font-math); }
+.dg text[font-family="sans-serif"] { font-family: var(--font-body); }
+.dg a:hover path { stroke-width: 3; }
+
+/* Comparisons */
+.trio { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1.25rem; }
+.duo { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 1.25rem; }
+.cell { display: grid; gap: 0.6rem; align-content: start; }
+.cell .m { font-size: 1.05rem; }
+.err {
+  display: grid;
+  gap: 0.4rem;
+  align-content: center;
+  min-height: 14rem;
+  padding: 1rem;
+  border: 1px dashed var(--error);
+  border-radius: 6px;
+  color: var(--error);
+  font-family: var(--font-code);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+.err-label { font-family: var(--font-body); font-size: 0.72rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.nest { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 0.6rem 1.25rem; align-items: baseline; }
+.ok { color: var(--link); font-weight: 500; }
+.bad { color: var(--error); font-family: var(--font-code); font-size: 0.86rem; }
+
+.sources { margin-top: 4rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); font-size: var(--step--1); color: var(--muted); display: grid; gap: 0.5rem; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .dg a path { transition: stroke-width 0.15s ease; }
+}
+@media (max-width: 46rem) {
+  .notation, .decl { grid-template-columns: minmax(0, 1fr); }
+  .defs, .facts, .nest { grid-template-columns: minmax(0, 1fr); gap: 0.25rem; }
+  .defs dd, .facts dd, .nest > :nth-child(even) { margin-bottom: 0.6rem; }
+  .glyph { font-size: 2.2rem; }
+  .chain { gap: 0.5rem 0.6rem; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <p class="eyebrow">BigraphER tutorial · 03 · expressions.big</p>
+  <h1>Bigraph Expressions</h1>
+  <p class="lede">The five declarations in <code>expressions.big</code> are built from three products and one composition. For each declaration this page gives its algebraic form, its type, its place and link graphs, and the drawing BigraphER makes of it.</p>
+  <nav class="toc" aria-label="Contents">
+    <a href="#notation">Notation</a>
+    <a href="#products">Three products</a>
+    <a href="#model">The model</a>
+    <a href="#compare">Comparisons</a>
+    <a href="#regenerate">Regenerating the drawings</a>
+  </nav>
+  <div class="chain" role="img" aria-label="Tensor, then join equal outer names to get parallel, then join all regions to get merge.">
+    <div class="op"><span class="glyph">⊗</span><span class="opname">tensor</span><code>+</code></div>
+    <div class="step step--link"><span>join equal outer names</span><span class="shaft"></span><span class="stepsub">link graph changes</span></div>
+    <div class="op"><span class="glyph">∥</span><span class="opname">parallel</span><code>||</code></div>
+    <div class="step"><span>join all regions</span><span class="shaft"></span><span class="stepsub">place graph changes</span></div>
+    <div class="op"><span class="glyph">|</span><span class="opname">merge</span><code>|</code></div>
+  </div>
+</header>
+
+<section id="notation" aria-labelledby="notation-h">
+  <h2 id="notation-h">Reading the notation</h2>
+  <div class="notation">
+    <dl class="defs">
+      <dt><i>G</i> : <i>I</i> → <i>J</i></dt>
+      <dd>“<i>G</i> has type <i>I</i> → <i>J</i>.” <i>I</i> is the inner face, what <i>G</i> needs from inside. <i>J</i> is the outer face, what the rest of the model sees.</dd>
+
+      <dt>⟨<i>m</i>, <span class="nm"><i>X</i></span>⟩</dt>
+      <dd>An interface: <i>m</i> places (sites on the inside, regions on the outside) and a set <i>X</i> of names. Name sets are green because names belong to the link graph.</dd>
+
+      <dt><i>ε</i> = ⟨0, <span class="nm">∅</span>⟩</dt>
+      <dd>No places and no names. A bigraph <i>ε</i> → <i>J</i> has no sites, so it is ground. Every bigraph in <code>expressions.big</code> is ground.</dd>
+
+      <dt><i>F</i> ∘ <i>G</i></dt>
+      <dd>Put <i>G</i> inside <i>F</i>: the regions of <i>G</i> fill the sites of <i>F</i>. Defined only when the outer face of <i>G</i> equals the inner face of <i>F</i>. Read right to left. BigraphER writes <code>F * G</code>.</dd>
+
+      <dt><i>A</i> ⊎ <i>B</i></dt>
+      <dd>Disjoint union: <i>A</i> ∪ <i>B</i> when <i>A</i> and <i>B</i> share nothing, undefined when they overlap. Its size is always |<i>A</i>| + |<i>B</i>|, while <i>A</i> ∪ <i>B</i> can be smaller.</dd>
+
+      <dt><span class="ctl">K</span><sub><span class="nm"><i>x</i></span></sub>.1</dt>
+      <dd>A node with control <span class="ctl">K</span> whose port links to the name <i>x</i>, with nothing inside it. 1 : <i>ε</i> → ⟨1, <span class="nm">∅</span>⟩ is one empty region. BigraphER writes <code>K{x}.1</code>.</dd>
+
+      <dt>prnt, link</dt>
+      <dd><span class="m nw">prnt : <i>m</i> ⊎ <i>V</i> → <i>V</i> ⊎ <i>n</i></span> gives the parent of each site and node. <span class="m nw">link : <i>X</i> ⊎ <i>P</i> → <i>E</i> ⊎ <span class="nm"><i>Y</i></span></span> sends each inner name and port to an edge or an outer name. <span class="m">(<i>v</i>, <i>i</i>)</span> is port <i>i</i> of node <i>v</i>.</dd>
+    </dl>
+
+    <div class="legend">
+      <h3>Reading the drawings</h3>
+      <ul>
+        <li>
+          <svg width="44" height="28" viewBox="0 0 44 28" aria-hidden="true"><rect class="lg-box" x="10" y="5" width="24" height="18"/><text class="lg-t" x="22" y="18">0</text></svg>
+          <span>Region (root), numbered from 0. Its position on screen means nothing; the number does.</span>
+        </li>
+        <li>
+          <svg width="44" height="28" viewBox="0 0 44 28" aria-hidden="true"><rect class="lg-box lg-site" x="10" y="5" width="24" height="18"/><text class="lg-t" x="22" y="18">0</text></svg>
+          <span>Site, a hole another bigraph can fill. None of the drawings here have one.</span>
+        </li>
+        <li>
+          <svg width="44" height="28" viewBox="0 0 44 28" aria-hidden="true"><circle class="lg-node" cx="22" cy="14" r="10"/><text class="lg-t lg-t--sans" x="22" y="18">A</text></svg>
+          <span>Node, labelled with its control.</span>
+        </li>
+        <li>
+          <svg width="44" height="28" viewBox="0 0 44 28" aria-hidden="true"><line class="lg-line" x1="5" y1="14" x2="32" y2="14"/><polygon class="lg-head" points="39,14 31,10 31,18"/></svg>
+          <span>Place graph: from parent to child.</span>
+        </li>
+        <li>
+          <svg width="44" height="28" viewBox="0 0 44 28" aria-hidden="true"><path class="lg-link" d="M4 22 C 14 4, 30 4, 40 22"/></svg>
+          <span>Link graph: lines that meet form one link.</span>
+        </li>
+        <li>
+          <svg width="44" height="28" viewBox="0 0 44 28" aria-hidden="true"><text class="lg-t" x="22" y="19">x</text></svg>
+          <span>Outer name, at the top of the drawing.</span>
+        </li>
+      </ul>
+      <p class="hint">Hover over a green line to see its edge and the nodes it joins, for example <code>e0: {v0,v1}</code>.</p>
+    </div>
+  </div>
+</section>
+
+<section id="products" aria-labelledby="products-h">
+  <h2 id="products-h">Three products</h2>
+  <p>Take two bigraphs <span class="m"><i>G</i><sub>0</sub> : ⟨<i>m</i><sub>0</sub>, <span class="nm"><i>X</i><sub>0</sub></span>⟩ → ⟨<i>n</i><sub>0</sub>, <span class="nm"><i>Y</i><sub>0</sub></span>⟩</span> and <span class="m"><i>G</i><sub>1</sub> : ⟨<i>m</i><sub>1</sub>, <span class="nm"><i>X</i><sub>1</sub></span>⟩ → ⟨<i>n</i><sub>1</sub>, <span class="nm"><i>Y</i><sub>1</sub></span>⟩</span> with no nodes or edges in common. All three products have the same inner face, <span class="m">⟨<i>m</i><sub>0</sub> + <i>m</i><sub>1</sub>, <span class="nm"><i>X</i><sub>0</sub> ⊎ <i>X</i><sub>1</sub></span>⟩</span>. They differ only in the outer face: how many regions the result has, and what happens to an outer name both sides use.</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th scope="col">Product</th><th scope="col">BigraphER</th><th scope="col">Outer face</th><th scope="col">Shared outer names</th><th scope="col">Regions</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <th scope="row" class="m"><i>G</i><sub>0</sub> ⊗ <i>G</i><sub>1</sub></th>
+          <td><code>+</code></td>
+          <td class="m">⟨<i>n</i><sub>0</sub> + <i>n</i><sub>1</sub>, <span class="nm"><i>Y</i><sub>0</sub> ⊎ <i>Y</i><sub>1</sub></span>⟩</td>
+          <td>rejected</td>
+          <td>kept apart</td>
+        </tr>
+        <tr>
+          <th scope="row" class="m"><i>G</i><sub>0</sub> ∥ <i>G</i><sub>1</sub></th>
+          <td><code>||</code></td>
+          <td class="m">⟨<i>n</i><sub>0</sub> + <i>n</i><sub>1</sub>, <span class="nm"><i>Y</i><sub>0</sub> ∪ <i>Y</i><sub>1</sub></span>⟩</td>
+          <td class="chg-link">joined into one link</td>
+          <td>kept apart</td>
+        </tr>
+        <tr>
+          <th scope="row" class="m"><i>G</i><sub>0</sub> | <i>G</i><sub>1</sub></th>
+          <td><code>|</code></td>
+          <td class="m">⟨1, <span class="nm"><i>Y</i><sub>0</sub> ∪ <i>Y</i><sub>1</sub></span>⟩</td>
+          <td>joined into one link</td>
+          <td class="chg-place">merged into one</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="hint">The bold cell in each row is what that product adds to the one above it. Tensor also needs disjoint inner names.</p>
+
+  <h3>Built in two steps</h3>
+  <div class="eqs">
+    <p><i>G</i><sub>0</sub> ∥ <i>G</i><sub>1</sub> = (id<sub><i>n</i><sub>0</sub>+<i>n</i><sub>1</sub></sub> ⊗ <i>σ</i>) ∘ (<i>G</i>′<sub>0</sub> ⊗ <i>G</i>′<sub>1</sub>)</p>
+    <p><i>G</i><sub>0</sub> | <i>G</i><sub>1</sub> = (merge<sub><i>n</i><sub>0</sub>+<i>n</i><sub>1</sub></sub> ⊗ id<sub><span class="nm"><i>Y</i><sub>0</sub>∪<i>Y</i><sub>1</sub></span></sub>) ∘ (<i>G</i><sub>0</sub> ∥ <i>G</i><sub>1</sub>)</p>
+  </div>
+  <div class="explain">
+    <p>For <span class="m">∥</span>, <span class="m"><i>G</i>′<sub>0</sub></span> and <span class="m"><i>G</i>′<sub>1</sub></span> are copies of the operands with each shared outer name <span class="m"><i>y</i></span> renamed apart (BigraphER uses <code>0y</code> and <code>1y</code>). The tensor of the copies is then defined, and the substitution <span class="m"><i>σ</i></span> sends <code>0y</code> and <code>1y</code> back to the single name <span class="m"><i>y</i></span>. The place graph is the same as for <span class="m">⊗</span>.</p>
+    <p>For <span class="m">|</span>, <span class="m">merge<sub><i>n</i></sub> : ⟨<i>n</i>, <span class="nm">∅</span>⟩ → ⟨1, <span class="nm">∅</span>⟩</span> has no nodes and puts all <span class="m"><i>n</i></span> of its sites in root 0. Composing with it moves every top-level node into one region and leaves the links as they were.</p>
+  </div>
+
+  <h3>Checking the type of <span class="m"><i>G</i><sub>0</sub> | <i>G</i><sub>1</sub></span></h3>
+  <div class="typecheck" role="table" aria-label="Type check of the merge product">
+    <span><i>G</i><sub>0</sub> ∥ <i>G</i><sub>1</sub></span><span>:</span>
+    <span>⟨<i>m</i><sub>0</sub>+<i>m</i><sub>1</sub>, <span class="nm"><i>X</i><sub>0</sub> ⊎ <i>X</i><sub>1</sub></span>⟩</span><span>→</span>
+    <span class="match">⟨<i>n</i><sub>0</sub>+<i>n</i><sub>1</sub>, <span class="nm"><i>Y</i><sub>0</sub> ∪ <i>Y</i><sub>1</sub></span>⟩</span><span></span><span></span>
+
+    <span>merge<sub><i>n</i><sub>0</sub>+<i>n</i><sub>1</sub></sub> ⊗ id<sub><span class="nm"><i>Y</i><sub>0</sub>∪<i>Y</i><sub>1</sub></span></sub></span><span>:</span>
+    <span></span><span></span>
+    <span class="match">⟨<i>n</i><sub>0</sub>+<i>n</i><sub>1</sub>, <span class="nm"><i>Y</i><sub>0</sub> ∪ <i>Y</i><sub>1</sub></span>⟩</span><span>→</span>
+    <span>⟨1, <span class="nm"><i>Y</i><sub>0</sub> ∪ <i>Y</i><sub>1</sub></span>⟩</span>
+
+    <span class="tc-total"><i>G</i><sub>0</sub> | <i>G</i><sub>1</sub></span><span class="tc-total">:</span>
+    <span class="tc-total">⟨<i>m</i><sub>0</sub>+<i>m</i><sub>1</sub>, <span class="nm"><i>X</i><sub>0</sub> ⊎ <i>X</i><sub>1</sub></span>⟩</span>
+    <span class="tc-total span3">→</span>
+    <span class="tc-total">⟨1, <span class="nm"><i>Y</i><sub>0</sub> ∪ <i>Y</i><sub>1</sub></span>⟩</span>
+  </div>
+  <p>Read ∘ right to left, so <span class="m"><i>G</i><sub>0</sub> ∥ <i>G</i><sub>1</sub></span> comes first. The highlighted faces match, so the composite is defined. Its type keeps the inside of the first step and the outside of the last.</p>
+
+  <ul class="notes">
+    <li>On ground bigraphs, | does not depend on order: <span class="m"><i>G</i> | <i>H</i> = <i>H</i> | <i>G</i></span>, because merging discards the region numbers. <span class="m"><i>G</i> ∥ <i>H</i></span> and <span class="m"><i>H</i> ∥ <i>G</i></span> differ in which operand gets region 0.</li>
+    <li>BigraphER’s <code>||</code> also accepts shared inner names. It joins the links that each side’s copy of the name feeds.</li>
+  </ul>
+</section>
+
+<section id="model" aria-labelledby="model-h">
+  <h2 id="model-h">The model, declaration by declaration</h2>
+
+  <article class="decl" id="t">
+    <h3><code>t</code><span class="m">: <i>ε</i> → ⟨2, <span class="nm">∅</span>⟩</span></h3>
+    <div class="decl-text">
+      <pre><code>big t = P.1 + Q.1;</code></pre>
+      <dl class="facts">
+        <dt>Algebra</dt><dd><i>t</i> = <span class="ctl">P</span>.1 ⊗ <span class="ctl">Q</span>.1</dd>
+        <dt>Nodes</dt><dd><i>V</i> = {<i>v</i><sub>0</sub> : <span class="ctl">P</span>, <i>v</i><sub>1</sub> : <span class="ctl">Q</span>}</dd>
+        <dt>Place graph</dt><dd>prnt : <i>v</i><sub>0</sub> ↦ 0, <i>v</i><sub>1</sub> ↦ 1</dd>
+        <dt>Link graph</dt><dd class="prose">Empty. P and Q have no ports.</dd>
+      </dl>
+      <p>Tensor puts P in region 0 and Q in region 1. Neither control has ports, so neither side has names and the tensor’s condition of disjoint names holds trivially.</p>
+    </div>
+    <figure class="dg"><svg style="--w: 70" role="img" aria-label="t: P in region 0, Q in region 1."
+ viewBox="0.00 0.00 69.60 82.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="t-graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 78.6)">
+<title>t.svg</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-78.6 65.6,-78.6 65.6,4 -4,4"/>
+<g id="t-node1" class="node">
+<title>r1</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="21.05,-74.6 0.55,-74.6 0.55,-57.6 21.05,-57.6 21.05,-74.6"/>
+<text text-anchor="middle" x="10.8" y="-62.05" font-family="serif" font-size="9.00">1</text>
+</g>
+<g id="t-v1_Q" class="node">
+<title>v1</title>
+<ellipse fill="none" stroke="black" cx="10.8" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="10.8" y="-7.12" font-family="sans-serif" font-size="9.00">Q</text>
+</g>
+<g id="t-edge2" class="edge">
+<title>r1&#45;&gt;v1</title>
+<path fill="none" stroke="black" d="M10.8,-57.24C10.8,-49.54 10.8,-37.59 10.8,-27.88"/>
+<polygon fill="black" stroke="black" points="10.8,-23.1 13.05,-28.1 10.8,-24.38 10.8,-28.1 10.8,-28.1 10.8,-28.1 10.8,-24.38 8.55,-28.1 10.8,-23.1"/>
+</g>
+<g id="t-node2" class="node">
+<title>r0</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="61.05,-74.6 40.55,-74.6 40.55,-57.6 61.05,-57.6 61.05,-74.6"/>
+<text text-anchor="middle" x="50.8" y="-62.05" font-family="serif" font-size="9.00">0</text>
+</g>
+<g id="t-v0_P" class="node">
+<title>v0</title>
+<ellipse fill="none" stroke="black" cx="50.8" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="50.8" y="-7.12" font-family="sans-serif" font-size="9.00">P</text>
+</g>
+<g id="t-edge1" class="edge">
+<title>r0&#45;&gt;v0</title>
+<path fill="none" stroke="black" d="M50.8,-57.24C50.8,-49.54 50.8,-37.59 50.8,-27.88"/>
+<polygon fill="black" stroke="black" points="50.8,-23.1 53.05,-28.1 50.8,-24.38 50.8,-28.1 50.8,-28.1 50.8,-28.1 50.8,-24.38 48.55,-28.1 50.8,-23.1"/>
+</g>
+</g>
+</svg><figcaption>out/t.svg</figcaption></figure>
+  </article>
+
+  <article class="decl" id="c">
+    <h3><code>c</code><span class="m">: <i>ε</i> → ⟨2, <span class="nm">∅</span>⟩</span></h3>
+    <div class="decl-text">
+      <pre><code>big c = id(2) * t;</code></pre>
+      <dl class="facts">
+        <dt>Algebra</dt><dd><i>c</i> = id<sub>2</sub> ∘ <i>t</i></dd>
+        <dt>Type check</dt><dd><i>t</i> : <i>ε</i> → ⟨2, <span class="nm">∅</span>⟩<br>id<sub>2</sub> : ⟨2, <span class="nm">∅</span>⟩ → ⟨2, <span class="nm">∅</span>⟩<br>id<sub>2</sub> ∘ <i>t</i> : <i>ε</i> → ⟨2, <span class="nm">∅</span>⟩</dd>
+        <dt>Graphs</dt><dd class="prose">Same nodes, parents and links as t.</dd>
+      </dl>
+      <p>BigraphER writes composition (∘) as <code>*</code>. <code>id(2)</code> has two sites and two regions and puts site <i>i</i> in region <i>i</i>. The composite is defined because the outer face of t, <span class="m">⟨2, <span class="nm">∅</span>⟩</span>, equals the inner face of <span class="m">id<sub>2</sub></span>. The identity changes nothing, so c is the same bigraph as t and the two drawings match.</p>
+    </div>
+    <figure class="dg"><svg style="--w: 70" role="img" aria-label="c: identical to t, P in region 0, Q in region 1."
+ viewBox="0.00 0.00 69.60 82.60" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="c-graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 78.6)">
+<title>c.svg</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-78.6 65.6,-78.6 65.6,4 -4,4"/>
+<g id="c-node1" class="node">
+<title>r1</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="21.05,-74.6 0.55,-74.6 0.55,-57.6 21.05,-57.6 21.05,-74.6"/>
+<text text-anchor="middle" x="10.8" y="-62.05" font-family="serif" font-size="9.00">1</text>
+</g>
+<g id="c-v1_Q" class="node">
+<title>v1</title>
+<ellipse fill="none" stroke="black" cx="10.8" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="10.8" y="-7.12" font-family="sans-serif" font-size="9.00">Q</text>
+</g>
+<g id="c-edge2" class="edge">
+<title>r1&#45;&gt;v1</title>
+<path fill="none" stroke="black" d="M10.8,-57.24C10.8,-49.54 10.8,-37.59 10.8,-27.88"/>
+<polygon fill="black" stroke="black" points="10.8,-23.1 13.05,-28.1 10.8,-24.38 10.8,-28.1 10.8,-28.1 10.8,-28.1 10.8,-24.38 8.55,-28.1 10.8,-23.1"/>
+</g>
+<g id="c-node2" class="node">
+<title>r0</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="61.05,-74.6 40.55,-74.6 40.55,-57.6 61.05,-57.6 61.05,-74.6"/>
+<text text-anchor="middle" x="50.8" y="-62.05" font-family="serif" font-size="9.00">0</text>
+</g>
+<g id="c-v0_P" class="node">
+<title>v0</title>
+<ellipse fill="none" stroke="black" cx="50.8" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="50.8" y="-7.12" font-family="sans-serif" font-size="9.00">P</text>
+</g>
+<g id="c-edge1" class="edge">
+<title>r0&#45;&gt;v0</title>
+<path fill="none" stroke="black" d="M50.8,-57.24C50.8,-49.54 50.8,-37.59 50.8,-27.88"/>
+<polygon fill="black" stroke="black" points="50.8,-23.1 53.05,-28.1 50.8,-24.38 50.8,-28.1 50.8,-28.1 50.8,-28.1 50.8,-24.38 48.55,-28.1 50.8,-23.1"/>
+</g>
+</g>
+</svg><figcaption>out/c.svg</figcaption></figure>
+  </article>
+
+  <article class="decl" id="p">
+    <h3><code>p</code><span class="m">: <i>ε</i> → ⟨1, <span class="nm">{<i>x</i>}</span>⟩</span></h3>
+    <div class="decl-text">
+      <pre><code>big p = A{x}.1 | B{x}.1;</code></pre>
+      <dl class="facts">
+        <dt>Algebra</dt><dd><i>p</i> = <span class="ctl">A</span><sub><span class="nm"><i>x</i></span></sub>.1 | <span class="ctl">B</span><sub><span class="nm"><i>x</i></span></sub>.1<br>&#8199;&#8199;= (merge<sub>2</sub> ⊗ id<sub><span class="nm">{<i>x</i>}</span></sub>) ∘ (<span class="ctl">A</span><sub><span class="nm"><i>x</i></span></sub>.1 ∥ <span class="ctl">B</span><sub><span class="nm"><i>x</i></span></sub>.1)</dd>
+        <dt>Nodes</dt><dd><i>V</i> = {<i>v</i><sub>0</sub> : <span class="ctl">A</span>, <i>v</i><sub>1</sub> : <span class="ctl">B</span>}</dd>
+        <dt>Place graph</dt><dd>prnt : <i>v</i><sub>0</sub> ↦ 0, <i>v</i><sub>1</sub> ↦ 0</dd>
+        <dt>Link graph</dt><dd>link : (<i>v</i><sub>0</sub>, 0) ↦ <span class="nm"><i>x</i></span>, (<i>v</i><sub>1</sub>, 0) ↦ <span class="nm"><i>x</i></span></dd>
+      </dl>
+      <p>A and B become siblings in region 0. Both ports use the name x, so the parallel step inside | joins them into one link. The drawing shows it as one green hyperedge running to x.</p>
+    </div>
+    <figure class="dg"><svg style="--w: 88" role="img" aria-label="p: A and B in region 0, both linked to outer name x."
+ viewBox="0.00 0.00 88.05 120.04" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="p-graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 116.04)">
+<title>p.svg</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-116.04 84.05,-116.04 84.05,4 -4,4"/>
+<g id="p-node1" class="node">
+<title>r0</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="72.5,-112.04 52,-112.04 52,-95.04 72.5,-95.04 72.5,-112.04"/>
+<text text-anchor="middle" x="62.25" y="-99.49" font-family="serif" font-size="9.00">0</text>
+</g>
+<g id="p-v0_A" class="node">
+<title>v0</title>
+<ellipse fill="none" stroke="black" cx="23.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="23.25" y="-7.12" font-family="sans-serif" font-size="9.00">A</text>
+</g>
+<g id="p-edge1" class="edge">
+<title>r0&#45;&gt;v0</title>
+<path fill="none" stroke="black" d="M58.92,-94.8C52.45,-79.73 38.04,-46.21 29.65,-26.69"/>
+<polygon fill="black" stroke="black" points="27.74,-22.24 31.78,-25.95 28.24,-23.42 29.71,-26.83 29.71,-26.83 29.71,-26.83 28.24,-23.42 27.64,-27.72 27.74,-22.24"/>
+</g>
+<g id="p-v1_B" class="node">
+<title>v1</title>
+<ellipse fill="none" stroke="black" cx="69.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="69.25" y="-7.12" font-family="sans-serif" font-size="9.00">B</text>
+</g>
+<g id="p-edge2" class="edge">
+<title>r0&#45;&gt;v1</title>
+<path fill="none" stroke="black" d="M62.85,-94.8C63.98,-80.09 66.47,-47.81 67.99,-28.12"/>
+<polygon fill="black" stroke="black" points="68.37,-23.18 70.23,-28.34 68.27,-24.46 67.99,-28.17 67.99,-28.17 67.99,-28.17 68.27,-24.46 65.74,-28 68.37,-23.18"/>
+</g>
+<g id="p-node2" class="node">
+<title>ox</title>
+<text text-anchor="middle" x="10.25" y="-99.49" font-family="serif" font-size="9.00">x</text>
+</g>
+<g id="p-node3" class="node">
+<title>e0</title>
+</g>
+<g id="p-edge3" class="edge">
+<title>ox&#45;&gt;e0</title>
+<path fill="none" stroke="green" d="M10.25,-95.36C10.25,-83 10.25,-59.04 10.25,-59.04"/>
+</g>
+<g id="p-edge4" class="edge">
+<title>e0&#45;&gt;v0</title>
+<g id="p-a_edge4"><a xlink:title="e0: {v0,v1}">
+<path fill="none" stroke="green" d="M10.25,-57.6C10.25,-57.6 16.68,-34.96 20.49,-21.51"/>
+</a>
+</g>
+</g>
+<g id="p-edge5" class="edge">
+<title>e0&#45;&gt;v1</title>
+<g id="p-a_edge5"><a xlink:title="e0: {v0,v1}">
+<path fill="none" stroke="green" d="M10.25,-57.6C10.25,-57.6 44.83,-30.75 61.05,-18.17"/>
+</a>
+</g>
+</g>
+</g>
+</svg><figcaption>out/p.svg</figcaption></figure>
+  </article>
+
+  <article class="decl" id="pp">
+    <h3><code>pp</code><span class="m">: <i>ε</i> → ⟨2, <span class="nm">{<i>y</i>}</span>⟩</span></h3>
+    <div class="decl-text">
+      <pre><code>big pp = C{y}.1 || D{y}.1;</code></pre>
+      <dl class="facts">
+        <dt>Algebra</dt><dd><i>pp</i> = <span class="ctl">C</span><sub><span class="nm"><i>y</i></span></sub>.1 ∥ <span class="ctl">D</span><sub><span class="nm"><i>y</i></span></sub>.1</dd>
+        <dt>Nodes</dt><dd><i>V</i> = {<i>v</i><sub>0</sub> : <span class="ctl">C</span>, <i>v</i><sub>1</sub> : <span class="ctl">D</span>}</dd>
+        <dt>Place graph</dt><dd>prnt : <i>v</i><sub>0</sub> ↦ 0, <i>v</i><sub>1</sub> ↦ 1</dd>
+        <dt>Link graph</dt><dd>link : (<i>v</i><sub>0</sub>, 0) ↦ <span class="nm"><i>y</i></span>, (<i>v</i><sub>1</sub>, 0) ↦ <span class="nm"><i>y</i></span></dd>
+      </dl>
+      <p>C and D keep separate regions, as they would under <code>+</code>. The name y appears on both sides, which <code>+</code> rejects. <code>||</code> takes the union of the outer names, <span class="m nw"><span class="nm">{<i>y</i>} ∪ {<i>y</i>} = {<i>y</i>}</span></span>, so both ports land on one link.</p>
+    </div>
+    <figure class="dg"><svg style="--w: 106" role="img" aria-label="pp: C in region 0, D in region 1, both linked to outer name y."
+ viewBox="0.00 0.00 106.50 120.04" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="pp-graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 116.04)">
+<title>pp.svg</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-116.04 102.5,-116.04 102.5,4 -4,4"/>
+<g id="pp-node1" class="node">
+<title>r1</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="20.5,-112.04 0,-112.04 0,-95.04 20.5,-95.04 20.5,-112.04"/>
+<text text-anchor="middle" x="10.25" y="-99.49" font-family="serif" font-size="9.00">1</text>
+</g>
+<g id="pp-v1_D" class="node">
+<title>v1</title>
+<ellipse fill="none" stroke="black" cx="29.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="29.25" y="-7.12" font-family="sans-serif" font-size="9.00">D</text>
+</g>
+<g id="pp-edge2" class="edge">
+<title>r1&#45;&gt;v1</title>
+<path fill="none" stroke="black" d="M11.87,-94.8C14.98,-79.95 21.84,-47.19 25.95,-27.56"/>
+<polygon fill="black" stroke="black" points="26.93,-22.88 28.11,-28.23 26.67,-24.13 25.91,-27.77 25.91,-27.77 25.91,-27.77 26.67,-24.13 23.7,-27.31 26.93,-22.88"/>
+</g>
+<g id="pp-node2" class="node">
+<title>r0</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="98.5,-112.04 78,-112.04 78,-95.04 98.5,-95.04 98.5,-112.04"/>
+<text text-anchor="middle" x="88.25" y="-99.49" font-family="serif" font-size="9.00">0</text>
+</g>
+<g id="pp-v0_C" class="node">
+<title>v0</title>
+<ellipse fill="none" stroke="black" cx="78.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="78.25" y="-7.12" font-family="sans-serif" font-size="9.00">C</text>
+</g>
+<g id="pp-edge1" class="edge">
+<title>r0&#45;&gt;v0</title>
+<path fill="none" stroke="black" d="M87.4,-94.8C85.78,-80.09 82.22,-47.81 80.05,-28.12"/>
+<polygon fill="black" stroke="black" points="79.5,-23.18 82.29,-27.9 79.64,-24.45 80.05,-28.15 80.05,-28.15 80.05,-28.15 79.64,-24.45 77.82,-28.4 79.5,-23.18"/>
+</g>
+<g id="pp-node3" class="node">
+<title>oy</title>
+<text text-anchor="middle" x="49.25" y="-99.49" font-family="serif" font-size="9.00">y</text>
+</g>
+<g id="pp-node4" class="node">
+<title>e0</title>
+</g>
+<g id="pp-edge3" class="edge">
+<title>oy&#45;&gt;e0</title>
+<path fill="none" stroke="green" d="M49.25,-95.36C49.25,-83 49.25,-59.04 49.25,-59.04"/>
+</g>
+<g id="pp-edge4" class="edge">
+<title>e0&#45;&gt;v0</title>
+<g id="pp-a_edge4"><a xlink:title="e0: {v0,v1}">
+<path fill="none" stroke="green" d="M49.25,-57.6C49.25,-57.6 64.56,-33.42 72.93,-20.2"/>
+</a>
+</g>
+</g>
+<g id="pp-edge5" class="edge">
+<title>e0&#45;&gt;v1</title>
+<g id="pp-a_edge5"><a xlink:title="e0: {v0,v1}">
+<path fill="none" stroke="green" d="M49.25,-57.6C49.25,-57.6 39.14,-34.45 33.3,-21.07"/>
+</a>
+</g>
+</g>
+</g>
+</svg><figcaption>out/pp.svg</figcaption></figure>
+  </article>
+
+  <article class="decl" id="init_state">
+    <h3><code>init_state</code><span class="m">: <i>ε</i> → ⟨1, <span class="nm">{<i>x</i>, <i>y</i>}</span>⟩</span></h3>
+    <div class="decl-text">
+      <pre><code>big init_state = p | pp | c;</code></pre>
+      <dl class="facts">
+        <dt>Algebra</dt><dd><i>init_state</i> = (<i>p</i> | <i>pp</i>) | <i>c</i><br>&#8199;&#8199;= (merge<sub>5</sub> ⊗ id<sub><span class="nm">{<i>x</i>,<i>y</i>}</span></sub>) ∘ (<i>p</i> ∥ <i>pp</i> ∥ <i>c</i>)</dd>
+        <dt>Type check</dt><dd><i>p</i> ∥ <i>pp</i> ∥ <i>c</i> : <i>ε</i> → ⟨1+2+2, <span class="nm">{<i>x</i>, <i>y</i>}</span>⟩<br>merge<sub>5</sub> ⊗ id<sub><span class="nm">{<i>x</i>,<i>y</i>}</span></sub> : ⟨5, <span class="nm">{<i>x</i>, <i>y</i>}</span>⟩ → ⟨1, <span class="nm">{<i>x</i>, <i>y</i>}</span>⟩</dd>
+        <dt>Nodes</dt><dd><i>V</i> = {<i>v</i><sub>0</sub> : <span class="ctl">A</span>, <i>v</i><sub>1</sub> : <span class="ctl">B</span>, <i>v</i><sub>2</sub> : <span class="ctl">C</span>, <i>v</i><sub>3</sub> : <span class="ctl">D</span>, <i>v</i><sub>4</sub> : <span class="ctl">P</span>, <i>v</i><sub>5</sub> : <span class="ctl">Q</span>}</dd>
+        <dt>Place graph</dt><dd>prnt : <i>v</i> ↦ 0 for every <i>v</i> ∈ <i>V</i></dd>
+        <dt>Link graph</dt><dd>link : (<i>v</i><sub>0</sub>, 0), (<i>v</i><sub>1</sub>, 0) ↦ <span class="nm"><i>x</i></span>; (<i>v</i><sub>2</sub>, 0), (<i>v</i><sub>3</sub>, 0) ↦ <span class="nm"><i>y</i></span></dd>
+      </dl>
+      <p><code>|</code> merges every region its operands bring. p has 1, pp has 2 and c has 2, so five regions become one, and the separation that <code>||</code> and <code>+</code> made inside pp and c is gone. BigraphER reads <code>p | pp | c</code> as <code>(p | pp) | c</code>. Merging twice gives the same result as merging once, which is the second line of the algebra.</p>
+    </div>
+    <figure class="dg"><svg style="--w: 265" role="img" aria-label="init_state: A, B, C, D, P and Q all in region 0; A and B linked to x, C and D linked to y."
+ viewBox="0.00 0.00 265.05 120.04" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="init_state-graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 116.04)">
+<title>init_state.svg</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-116.04 261.05,-116.04 261.05,4 -4,4"/>
+<g id="init_state-node1" class="node">
+<title>r0</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="143.5,-112.04 123,-112.04 123,-95.04 143.5,-95.04 143.5,-112.04"/>
+<text text-anchor="middle" x="133.25" y="-99.49" font-family="serif" font-size="9.00">0</text>
+</g>
+<g id="init_state-v0_A" class="node">
+<title>v0</title>
+<ellipse fill="none" stroke="black" cx="68.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="68.25" y="-7.12" font-family="sans-serif" font-size="9.00">A</text>
+</g>
+<g id="init_state-edge1" class="edge">
+<title>r0&#45;&gt;v0</title>
+<path fill="none" stroke="black" d="M127.71,-94.8C116.65,-79.37 91.73,-44.58 77.92,-25.3"/>
+<polygon fill="black" stroke="black" points="75.05,-21.29 79.79,-24.05 75.8,-22.34 77.96,-25.36 77.96,-25.36 77.96,-25.36 75.8,-22.34 76.13,-26.67 75.05,-21.29"/>
+</g>
+<g id="init_state-v1_B" class="node">
+<title>v1</title>
+<ellipse fill="none" stroke="black" cx="16.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="16.25" y="-7.12" font-family="sans-serif" font-size="9.00">B</text>
+</g>
+<g id="init_state-edge2" class="edge">
+<title>r0&#45;&gt;v1</title>
+<path fill="none" stroke="black" d="M123.27,-94.8C102.21,-78.47 53.19,-40.45 29.52,-22.09"/>
+<polygon fill="black" stroke="black" points="25.57,-19.02 30.9,-20.31 26.58,-19.81 29.52,-22.09 29.52,-22.09 29.52,-22.09 26.58,-19.81 28.14,-23.87 25.57,-19.02"/>
+</g>
+<g id="init_state-v2_C" class="node">
+<title>v2</title>
+<ellipse fill="none" stroke="black" cx="157.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="157.25" y="-7.12" font-family="sans-serif" font-size="9.00">C</text>
+</g>
+<g id="init_state-edge3" class="edge">
+<title>r0&#45;&gt;v2</title>
+<path fill="none" stroke="black" d="M135.3,-94.8C139.22,-79.95 147.89,-47.19 153.08,-27.56"/>
+<polygon fill="black" stroke="black" points="154.32,-22.86 155.22,-28.27 154,-24.1 153.05,-27.7 153.05,-27.7 153.05,-27.7 154,-24.1 150.87,-27.12 154.32,-22.86"/>
+</g>
+<g id="init_state-v3_D" class="node">
+<title>v3</title>
+<ellipse fill="none" stroke="black" cx="203.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="203.25" y="-7.12" font-family="sans-serif" font-size="9.00">D</text>
+</g>
+<g id="init_state-edge4" class="edge">
+<title>r0&#45;&gt;v3</title>
+<path fill="none" stroke="black" d="M139.22,-94.8C151.29,-79.16 178.7,-43.63 193.44,-24.52"/>
+<polygon fill="black" stroke="black" points="196.15,-21 194.88,-26.34 195.37,-22.02 193.1,-24.96 193.1,-24.96 193.1,-24.96 195.37,-22.02 191.32,-23.59 196.15,-21"/>
+</g>
+<g id="init_state-v4_P" class="node">
+<title>v4</title>
+<ellipse fill="none" stroke="black" cx="114.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="114.25" y="-7.12" font-family="sans-serif" font-size="9.00">P</text>
+</g>
+<g id="init_state-edge5" class="edge">
+<title>r0&#45;&gt;v4</title>
+<path fill="none" stroke="black" d="M131.63,-94.8C128.52,-79.95 121.66,-47.19 117.55,-27.56"/>
+<polygon fill="black" stroke="black" points="116.57,-22.88 119.8,-27.31 116.83,-24.13 117.59,-27.77 117.59,-27.77 117.59,-27.77 116.83,-24.13 115.39,-28.23 116.57,-22.88"/>
+</g>
+<g id="init_state-v5_Q" class="node">
+<title>v5</title>
+<ellipse fill="none" stroke="black" cx="246.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="246.25" y="-7.12" font-family="sans-serif" font-size="9.00">Q</text>
+</g>
+<g id="init_state-edge6" class="edge">
+<title>r0&#45;&gt;v5</title>
+<path fill="none" stroke="black" d="M143.78,-100.37C162.91,-95.9 203.59,-83.94 227.25,-59.04 235.52,-50.34 240.36,-37.57 243.09,-27.51"/>
+<polygon fill="black" stroke="black" points="244.23,-22.83 245.23,-28.22 243.93,-24.07 243.04,-27.69 243.04,-27.69 243.04,-27.69 243.93,-24.07 240.86,-27.15 244.23,-22.83"/>
+</g>
+<g id="init_state-node2" class="node">
+<title>ox</title>
+<text text-anchor="middle" x="10.25" y="-99.49" font-family="serif" font-size="9.00">x</text>
+</g>
+<g id="init_state-node4" class="node">
+<title>e0</title>
+</g>
+<g id="init_state-edge7" class="edge">
+<title>ox&#45;&gt;e0</title>
+<path fill="none" stroke="green" d="M10.25,-95.36C10.25,-83 10.25,-59.04 10.25,-59.04"/>
+</g>
+<g id="init_state-node3" class="node">
+<title>oy</title>
+<text text-anchor="middle" x="218.25" y="-99.49" font-family="serif" font-size="9.00">y</text>
+</g>
+<g id="init_state-node5" class="node">
+<title>e1</title>
+</g>
+<g id="init_state-edge10" class="edge">
+<title>oy&#45;&gt;e1</title>
+<path fill="none" stroke="green" d="M218.25,-95.36C218.25,-83 218.25,-59.04 218.25,-59.04"/>
+</g>
+<g id="init_state-edge8" class="edge">
+<title>e0&#45;&gt;v0</title>
+<g id="init_state-a_edge8"><a xlink:title="e0: {v0,v1}">
+<path fill="none" stroke="green" d="M10.25,-57.6C10.25,-57.6 44.25,-30.75 60.19,-18.17"/>
+</a>
+</g>
+</g>
+<g id="init_state-edge9" class="edge">
+<title>e0&#45;&gt;v1</title>
+<g id="init_state-a_edge9"><a xlink:title="e0: {v0,v1}">
+<path fill="none" stroke="green" d="M10.25,-57.6C10.25,-57.6 13.15,-35.46 14.92,-21.96"/>
+</a>
+</g>
+</g>
+<g id="init_state-edge11" class="edge">
+<title>e1&#45;&gt;v2</title>
+<g id="init_state-a_edge11"><a xlink:title="e1: {v2,v3}">
+<path fill="none" stroke="green" d="M218.25,-57.6C218.25,-57.6 182.49,-30.75 165.73,-18.17"/>
+</a>
+</g>
+</g>
+<g id="init_state-edge12" class="edge">
+<title>e1&#45;&gt;v3</title>
+<g id="init_state-a_edge12"><a xlink:title="e1: {v2,v3}">
+<path fill="none" stroke="green" d="M218.25,-57.6C218.25,-57.6 210.83,-34.96 206.43,-21.51"/>
+</a>
+</g>
+</g>
+</g>
+</svg><figcaption>out/init_state.svg</figcaption></figure>
+  </article>
+</section>
+
+<section id="compare" aria-labelledby="compare-h">
+  <h2 id="compare-h">Same operands, different products</h2>
+
+  <h3>C<sub>y</sub>.1 and D<sub>y</sub>.1 under each product</h3>
+  <div class="trio">
+    <div class="cell">
+      <h4><code>C{y}.1 + D{y}.1</code></h4>
+      <p class="m">undefined: <span class="nm">{<i>y</i>} ⊎ {<i>y</i>}</span> does not exist</p>
+      <div class="err"><span class="err-label">BigraphER</span><span>Error: Tensor product has common inner names {} and common outer names {y}</span></div>
+    </div>
+    <div class="cell">
+      <h4><code>C{y}.1 || D{y}.1</code></h4>
+      <p class="m"><i>ε</i> → ⟨2, <span class="nm">{<i>y</i>}</span>⟩</p>
+      <figure class="dg"><svg style="--w: 106" role="img" aria-label="pp: C in region 0, D in region 1, both linked to outer name y."
+ viewBox="0.00 0.00 106.50 120.04" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="pp-cmp-graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 116.04)">
+<title>pp.svg</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-116.04 102.5,-116.04 102.5,4 -4,4"/>
+<g id="pp-cmp-node1" class="node">
+<title>r1</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="20.5,-112.04 0,-112.04 0,-95.04 20.5,-95.04 20.5,-112.04"/>
+<text text-anchor="middle" x="10.25" y="-99.49" font-family="serif" font-size="9.00">1</text>
+</g>
+<g id="pp-cmp-v1_D" class="node">
+<title>v1</title>
+<ellipse fill="none" stroke="black" cx="29.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="29.25" y="-7.12" font-family="sans-serif" font-size="9.00">D</text>
+</g>
+<g id="pp-cmp-edge2" class="edge">
+<title>r1&#45;&gt;v1</title>
+<path fill="none" stroke="black" d="M11.87,-94.8C14.98,-79.95 21.84,-47.19 25.95,-27.56"/>
+<polygon fill="black" stroke="black" points="26.93,-22.88 28.11,-28.23 26.67,-24.13 25.91,-27.77 25.91,-27.77 25.91,-27.77 26.67,-24.13 23.7,-27.31 26.93,-22.88"/>
+</g>
+<g id="pp-cmp-node2" class="node">
+<title>r0</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="98.5,-112.04 78,-112.04 78,-95.04 98.5,-95.04 98.5,-112.04"/>
+<text text-anchor="middle" x="88.25" y="-99.49" font-family="serif" font-size="9.00">0</text>
+</g>
+<g id="pp-cmp-v0_C" class="node">
+<title>v0</title>
+<ellipse fill="none" stroke="black" cx="78.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="78.25" y="-7.12" font-family="sans-serif" font-size="9.00">C</text>
+</g>
+<g id="pp-cmp-edge1" class="edge">
+<title>r0&#45;&gt;v0</title>
+<path fill="none" stroke="black" d="M87.4,-94.8C85.78,-80.09 82.22,-47.81 80.05,-28.12"/>
+<polygon fill="black" stroke="black" points="79.5,-23.18 82.29,-27.9 79.64,-24.45 80.05,-28.15 80.05,-28.15 80.05,-28.15 79.64,-24.45 77.82,-28.4 79.5,-23.18"/>
+</g>
+<g id="pp-cmp-node3" class="node">
+<title>oy</title>
+<text text-anchor="middle" x="49.25" y="-99.49" font-family="serif" font-size="9.00">y</text>
+</g>
+<g id="pp-cmp-node4" class="node">
+<title>e0</title>
+</g>
+<g id="pp-cmp-edge3" class="edge">
+<title>oy&#45;&gt;e0</title>
+<path fill="none" stroke="green" d="M49.25,-95.36C49.25,-83 49.25,-59.04 49.25,-59.04"/>
+</g>
+<g id="pp-cmp-edge4" class="edge">
+<title>e0&#45;&gt;v0</title>
+<g id="pp-cmp-a_edge4"><a xlink:title="e0: {v0,v1}">
+<path fill="none" stroke="green" d="M49.25,-57.6C49.25,-57.6 64.56,-33.42 72.93,-20.2"/>
+</a>
+</g>
+</g>
+<g id="pp-cmp-edge5" class="edge">
+<title>e0&#45;&gt;v1</title>
+<g id="pp-cmp-a_edge5"><a xlink:title="e0: {v0,v1}">
+<path fill="none" stroke="green" d="M49.25,-57.6C49.25,-57.6 39.14,-34.45 33.3,-21.07"/>
+</a>
+</g>
+</g>
+</g>
+</svg><figcaption>two regions, one link</figcaption></figure>
+    </div>
+    <div class="cell">
+      <h4><code>C{y}.1 | D{y}.1</code></h4>
+      <p class="m"><i>ε</i> → ⟨1, <span class="nm">{<i>y</i>}</span>⟩</p>
+      <figure class="dg"><svg style="--w: 88" role="img" aria-label="C{y}.1 | D{y}.1: C and D in region 0, both linked to outer name y."
+ viewBox="0.00 0.00 88.05 120.04" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="pp_merge-graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 116.04)">
+<title>pp_merge.svg</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-116.04 84.05,-116.04 84.05,4 -4,4"/>
+<g id="pp_merge-node1" class="node">
+<title>r0</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="72.5,-112.04 52,-112.04 52,-95.04 72.5,-95.04 72.5,-112.04"/>
+<text text-anchor="middle" x="62.25" y="-99.49" font-family="serif" font-size="9.00">0</text>
+</g>
+<g id="pp_merge-v0_C" class="node">
+<title>v0</title>
+<ellipse fill="none" stroke="black" cx="23.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="23.25" y="-7.12" font-family="sans-serif" font-size="9.00">C</text>
+</g>
+<g id="pp_merge-edge1" class="edge">
+<title>r0&#45;&gt;v0</title>
+<path fill="none" stroke="black" d="M58.92,-94.8C52.45,-79.73 38.04,-46.21 29.65,-26.69"/>
+<polygon fill="black" stroke="black" points="27.74,-22.24 31.78,-25.95 28.24,-23.42 29.71,-26.83 29.71,-26.83 29.71,-26.83 28.24,-23.42 27.64,-27.72 27.74,-22.24"/>
+</g>
+<g id="pp_merge-v1_D" class="node">
+<title>v1</title>
+<ellipse fill="none" stroke="black" cx="69.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="69.25" y="-7.12" font-family="sans-serif" font-size="9.00">D</text>
+</g>
+<g id="pp_merge-edge2" class="edge">
+<title>r0&#45;&gt;v1</title>
+<path fill="none" stroke="black" d="M62.85,-94.8C63.98,-80.09 66.47,-47.81 67.99,-28.12"/>
+<polygon fill="black" stroke="black" points="68.37,-23.18 70.23,-28.34 68.27,-24.46 67.99,-28.17 67.99,-28.17 67.99,-28.17 68.27,-24.46 65.74,-28 68.37,-23.18"/>
+</g>
+<g id="pp_merge-node2" class="node">
+<title>oy</title>
+<text text-anchor="middle" x="10.25" y="-99.49" font-family="serif" font-size="9.00">y</text>
+</g>
+<g id="pp_merge-node3" class="node">
+<title>e0</title>
+</g>
+<g id="pp_merge-edge3" class="edge">
+<title>oy&#45;&gt;e0</title>
+<path fill="none" stroke="green" d="M10.25,-95.36C10.25,-83 10.25,-59.04 10.25,-59.04"/>
+</g>
+<g id="pp_merge-edge4" class="edge">
+<title>e0&#45;&gt;v0</title>
+<g id="pp_merge-a_edge4"><a xlink:title="e0: {v0,v1}">
+<path fill="none" stroke="green" d="M10.25,-57.6C10.25,-57.6 16.68,-34.96 20.49,-21.51"/>
+</a>
+</g>
+</g>
+<g id="pp_merge-edge5" class="edge">
+<title>e0&#45;&gt;v1</title>
+<g id="pp_merge-a_edge5"><a xlink:title="e0: {v0,v1}">
+<path fill="none" stroke="green" d="M10.25,-57.6C10.25,-57.6 44.83,-30.75 61.05,-18.17"/>
+</a>
+</g>
+</g>
+</g>
+</svg><figcaption>one region, one link</figcaption></figure>
+    </div>
+  </div>
+
+  <h3>Combining p, pp and c</h3>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th scope="col">Expression</th><th scope="col">Type</th><th scope="col">Regions</th></tr></thead>
+      <tbody>
+        <tr><th scope="row"><code>p</code></th><td class="m"><i>ε</i> → ⟨1, <span class="nm">{<i>x</i>}</span>⟩</td><td>1</td></tr>
+        <tr><th scope="row"><code>pp</code></th><td class="m"><i>ε</i> → ⟨2, <span class="nm">{<i>y</i>}</span>⟩</td><td>2</td></tr>
+        <tr><th scope="row"><code>c</code></th><td class="m"><i>ε</i> → ⟨2, <span class="nm">∅</span>⟩</td><td>2</td></tr>
+        <tr><th scope="row"><code>p | pp | c</code></th><td class="m"><i>ε</i> → ⟨1, <span class="nm">{<i>x</i>, <i>y</i>}</span>⟩</td><td class="chg-place">1</td></tr>
+        <tr><th scope="row"><code>p || pp || c</code></th><td class="m"><i>ε</i> → ⟨5, <span class="nm">{<i>x</i>, <i>y</i>}</span>⟩</td><td class="chg-place">5</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="duo">
+    <figure class="dg"><svg style="--w: 265" role="img" aria-label="init_state: A, B, C, D, P and Q all in region 0; A and B linked to x, C and D linked to y."
+ viewBox="0.00 0.00 265.05 120.04" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="init_state-cmp-graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 116.04)">
+<title>init_state.svg</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-116.04 261.05,-116.04 261.05,4 -4,4"/>
+<g id="init_state-cmp-node1" class="node">
+<title>r0</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="143.5,-112.04 123,-112.04 123,-95.04 143.5,-95.04 143.5,-112.04"/>
+<text text-anchor="middle" x="133.25" y="-99.49" font-family="serif" font-size="9.00">0</text>
+</g>
+<g id="init_state-cmp-v0_A" class="node">
+<title>v0</title>
+<ellipse fill="none" stroke="black" cx="68.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="68.25" y="-7.12" font-family="sans-serif" font-size="9.00">A</text>
+</g>
+<g id="init_state-cmp-edge1" class="edge">
+<title>r0&#45;&gt;v0</title>
+<path fill="none" stroke="black" d="M127.71,-94.8C116.65,-79.37 91.73,-44.58 77.92,-25.3"/>
+<polygon fill="black" stroke="black" points="75.05,-21.29 79.79,-24.05 75.8,-22.34 77.96,-25.36 77.96,-25.36 77.96,-25.36 75.8,-22.34 76.13,-26.67 75.05,-21.29"/>
+</g>
+<g id="init_state-cmp-v1_B" class="node">
+<title>v1</title>
+<ellipse fill="none" stroke="black" cx="16.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="16.25" y="-7.12" font-family="sans-serif" font-size="9.00">B</text>
+</g>
+<g id="init_state-cmp-edge2" class="edge">
+<title>r0&#45;&gt;v1</title>
+<path fill="none" stroke="black" d="M123.27,-94.8C102.21,-78.47 53.19,-40.45 29.52,-22.09"/>
+<polygon fill="black" stroke="black" points="25.57,-19.02 30.9,-20.31 26.58,-19.81 29.52,-22.09 29.52,-22.09 29.52,-22.09 26.58,-19.81 28.14,-23.87 25.57,-19.02"/>
+</g>
+<g id="init_state-cmp-v2_C" class="node">
+<title>v2</title>
+<ellipse fill="none" stroke="black" cx="157.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="157.25" y="-7.12" font-family="sans-serif" font-size="9.00">C</text>
+</g>
+<g id="init_state-cmp-edge3" class="edge">
+<title>r0&#45;&gt;v2</title>
+<path fill="none" stroke="black" d="M135.3,-94.8C139.22,-79.95 147.89,-47.19 153.08,-27.56"/>
+<polygon fill="black" stroke="black" points="154.32,-22.86 155.22,-28.27 154,-24.1 153.05,-27.7 153.05,-27.7 153.05,-27.7 154,-24.1 150.87,-27.12 154.32,-22.86"/>
+</g>
+<g id="init_state-cmp-v3_D" class="node">
+<title>v3</title>
+<ellipse fill="none" stroke="black" cx="203.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="203.25" y="-7.12" font-family="sans-serif" font-size="9.00">D</text>
+</g>
+<g id="init_state-cmp-edge4" class="edge">
+<title>r0&#45;&gt;v3</title>
+<path fill="none" stroke="black" d="M139.22,-94.8C151.29,-79.16 178.7,-43.63 193.44,-24.52"/>
+<polygon fill="black" stroke="black" points="196.15,-21 194.88,-26.34 195.37,-22.02 193.1,-24.96 193.1,-24.96 193.1,-24.96 195.37,-22.02 191.32,-23.59 196.15,-21"/>
+</g>
+<g id="init_state-cmp-v4_P" class="node">
+<title>v4</title>
+<ellipse fill="none" stroke="black" cx="114.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="114.25" y="-7.12" font-family="sans-serif" font-size="9.00">P</text>
+</g>
+<g id="init_state-cmp-edge5" class="edge">
+<title>r0&#45;&gt;v4</title>
+<path fill="none" stroke="black" d="M131.63,-94.8C128.52,-79.95 121.66,-47.19 117.55,-27.56"/>
+<polygon fill="black" stroke="black" points="116.57,-22.88 119.8,-27.31 116.83,-24.13 117.59,-27.77 117.59,-27.77 117.59,-27.77 116.83,-24.13 115.39,-28.23 116.57,-22.88"/>
+</g>
+<g id="init_state-cmp-v5_Q" class="node">
+<title>v5</title>
+<ellipse fill="none" stroke="black" cx="246.25" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="246.25" y="-7.12" font-family="sans-serif" font-size="9.00">Q</text>
+</g>
+<g id="init_state-cmp-edge6" class="edge">
+<title>r0&#45;&gt;v5</title>
+<path fill="none" stroke="black" d="M143.78,-100.37C162.91,-95.9 203.59,-83.94 227.25,-59.04 235.52,-50.34 240.36,-37.57 243.09,-27.51"/>
+<polygon fill="black" stroke="black" points="244.23,-22.83 245.23,-28.22 243.93,-24.07 243.04,-27.69 243.04,-27.69 243.04,-27.69 243.93,-24.07 240.86,-27.15 244.23,-22.83"/>
+</g>
+<g id="init_state-cmp-node2" class="node">
+<title>ox</title>
+<text text-anchor="middle" x="10.25" y="-99.49" font-family="serif" font-size="9.00">x</text>
+</g>
+<g id="init_state-cmp-node4" class="node">
+<title>e0</title>
+</g>
+<g id="init_state-cmp-edge7" class="edge">
+<title>ox&#45;&gt;e0</title>
+<path fill="none" stroke="green" d="M10.25,-95.36C10.25,-83 10.25,-59.04 10.25,-59.04"/>
+</g>
+<g id="init_state-cmp-node3" class="node">
+<title>oy</title>
+<text text-anchor="middle" x="218.25" y="-99.49" font-family="serif" font-size="9.00">y</text>
+</g>
+<g id="init_state-cmp-node5" class="node">
+<title>e1</title>
+</g>
+<g id="init_state-cmp-edge10" class="edge">
+<title>oy&#45;&gt;e1</title>
+<path fill="none" stroke="green" d="M218.25,-95.36C218.25,-83 218.25,-59.04 218.25,-59.04"/>
+</g>
+<g id="init_state-cmp-edge8" class="edge">
+<title>e0&#45;&gt;v0</title>
+<g id="init_state-cmp-a_edge8"><a xlink:title="e0: {v0,v1}">
+<path fill="none" stroke="green" d="M10.25,-57.6C10.25,-57.6 44.25,-30.75 60.19,-18.17"/>
+</a>
+</g>
+</g>
+<g id="init_state-cmp-edge9" class="edge">
+<title>e0&#45;&gt;v1</title>
+<g id="init_state-cmp-a_edge9"><a xlink:title="e0: {v0,v1}">
+<path fill="none" stroke="green" d="M10.25,-57.6C10.25,-57.6 13.15,-35.46 14.92,-21.96"/>
+</a>
+</g>
+</g>
+<g id="init_state-cmp-edge11" class="edge">
+<title>e1&#45;&gt;v2</title>
+<g id="init_state-cmp-a_edge11"><a xlink:title="e1: {v2,v3}">
+<path fill="none" stroke="green" d="M218.25,-57.6C218.25,-57.6 182.49,-30.75 165.73,-18.17"/>
+</a>
+</g>
+</g>
+<g id="init_state-cmp-edge12" class="edge">
+<title>e1&#45;&gt;v3</title>
+<g id="init_state-cmp-a_edge12"><a xlink:title="e1: {v2,v3}">
+<path fill="none" stroke="green" d="M218.25,-57.6C218.25,-57.6 210.83,-34.96 206.43,-21.51"/>
+</a>
+</g>
+</g>
+</g>
+</svg><figcaption>p | pp | c</figcaption></figure>
+    <figure class="dg"><svg style="--w: 279" role="img" aria-label="p || pp || c: five regions; A and B in region 0, C, D, P, Q in regions 1 to 4; A and B linked to x, C and D linked to y."
+ viewBox="0.00 0.00 278.60 120.04" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="init_par-graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 116.04)">
+<title>init_par.svg</title>
+<polygon fill="white" stroke="none" points="-4,4 -4,-116.04 274.6,-116.04 274.6,4 -4,4"/>
+<g id="init_par-node1" class="node">
+<title>r4</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="21.05,-112.04 0.55,-112.04 0.55,-95.04 21.05,-95.04 21.05,-112.04"/>
+<text text-anchor="middle" x="10.8" y="-99.49" font-family="serif" font-size="9.00">4</text>
+</g>
+<g id="init_par-v5_Q" class="node">
+<title>v5</title>
+<ellipse fill="none" stroke="black" cx="10.8" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="10.8" y="-7.12" font-family="sans-serif" font-size="9.00">Q</text>
+</g>
+<g id="init_par-edge6" class="edge">
+<title>r4&#45;&gt;v5</title>
+<path fill="none" stroke="black" d="M10.8,-94.8C10.8,-80.09 10.8,-47.81 10.8,-28.12"/>
+<polygon fill="black" stroke="black" points="10.8,-23.19 13.05,-28.19 10.8,-24.47 10.8,-28.19 10.8,-28.19 10.8,-28.19 10.8,-24.47 8.55,-28.19 10.8,-23.19"/>
+</g>
+<g id="init_par-node2" class="node">
+<title>r3</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="61.05,-112.04 40.55,-112.04 40.55,-95.04 61.05,-95.04 61.05,-112.04"/>
+<text text-anchor="middle" x="50.8" y="-99.49" font-family="serif" font-size="9.00">3</text>
+</g>
+<g id="init_par-v4_P" class="node">
+<title>v4</title>
+<ellipse fill="none" stroke="black" cx="50.8" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="50.8" y="-7.12" font-family="sans-serif" font-size="9.00">P</text>
+</g>
+<g id="init_par-edge5" class="edge">
+<title>r3&#45;&gt;v4</title>
+<path fill="none" stroke="black" d="M50.8,-94.8C50.8,-80.09 50.8,-47.81 50.8,-28.12"/>
+<polygon fill="black" stroke="black" points="50.8,-23.19 53.05,-28.19 50.8,-24.47 50.8,-28.19 50.8,-28.19 50.8,-28.19 50.8,-24.47 48.55,-28.19 50.8,-23.19"/>
+</g>
+<g id="init_par-node3" class="node">
+<title>r2</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="100.05,-112.04 79.55,-112.04 79.55,-95.04 100.05,-95.04 100.05,-112.04"/>
+<text text-anchor="middle" x="89.8" y="-99.49" font-family="serif" font-size="9.00">2</text>
+</g>
+<g id="init_par-v3_D" class="node">
+<title>v3</title>
+<ellipse fill="none" stroke="black" cx="99.8" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="99.8" y="-7.12" font-family="sans-serif" font-size="9.00">D</text>
+</g>
+<g id="init_par-edge4" class="edge">
+<title>r2&#45;&gt;v3</title>
+<path fill="none" stroke="black" d="M90.65,-94.8C92.27,-80.09 95.83,-47.81 98,-28.12"/>
+<polygon fill="black" stroke="black" points="98.55,-23.18 100.23,-28.4 98.41,-24.45 98,-28.15 98,-28.15 98,-28.15 98.41,-24.45 95.76,-27.9 98.55,-23.18"/>
+</g>
+<g id="init_par-node4" class="node">
+<title>r1</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="178.05,-112.04 157.55,-112.04 157.55,-95.04 178.05,-95.04 178.05,-112.04"/>
+<text text-anchor="middle" x="167.8" y="-99.49" font-family="serif" font-size="9.00">1</text>
+</g>
+<g id="init_par-v2_C" class="node">
+<title>v2</title>
+<ellipse fill="none" stroke="black" cx="157.8" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="157.8" y="-7.12" font-family="sans-serif" font-size="9.00">C</text>
+</g>
+<g id="init_par-edge3" class="edge">
+<title>r1&#45;&gt;v2</title>
+<path fill="none" stroke="black" d="M166.95,-94.8C165.33,-80.09 161.77,-47.81 159.6,-28.12"/>
+<polygon fill="black" stroke="black" points="159.05,-23.18 161.84,-27.9 159.19,-24.45 159.6,-28.15 159.6,-28.15 159.6,-28.15 159.19,-24.45 157.37,-28.4 159.05,-23.18"/>
+</g>
+<g id="init_par-node5" class="node">
+<title>r0</title>
+<polygon fill="none" stroke="black" stroke-dasharray="5,2" points="270.05,-112.04 249.55,-112.04 249.55,-95.04 270.05,-95.04 270.05,-112.04"/>
+<text text-anchor="middle" x="259.8" y="-99.49" font-family="serif" font-size="9.00">0</text>
+</g>
+<g id="init_par-v0_A" class="node">
+<title>v0</title>
+<ellipse fill="none" stroke="black" cx="206.8" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="206.8" y="-7.12" font-family="sans-serif" font-size="9.00">A</text>
+</g>
+<g id="init_par-edge1" class="edge">
+<title>r0&#45;&gt;v0</title>
+<path fill="none" stroke="black" d="M255.28,-94.8C246.31,-79.45 226.15,-44.93 214.86,-25.6"/>
+<polygon fill="black" stroke="black" points="212.54,-21.62 217,-24.81 213.18,-22.73 215.06,-25.94 215.06,-25.94 215.06,-25.94 213.18,-22.73 213.12,-27.08 212.54,-21.62"/>
+</g>
+<g id="init_par-v1_B" class="node">
+<title>v1</title>
+<ellipse fill="none" stroke="black" cx="259.8" cy="-10.8" rx="10.8" ry="10.8"/>
+<text text-anchor="middle" x="259.8" y="-7.12" font-family="sans-serif" font-size="9.00">B</text>
+</g>
+<g id="init_par-edge2" class="edge">
+<title>r0&#45;&gt;v1</title>
+<path fill="none" stroke="black" d="M259.8,-94.8C259.8,-80.09 259.8,-47.81 259.8,-28.12"/>
+<polygon fill="black" stroke="black" points="259.8,-23.19 262.05,-28.19 259.8,-24.47 259.8,-28.19 259.8,-28.19 259.8,-28.19 259.8,-24.47 257.55,-28.19 259.8,-23.19"/>
+</g>
+<g id="init_par-node6" class="node">
+<title>ox</title>
+<text text-anchor="middle" x="206.8" y="-99.49" font-family="serif" font-size="9.00">x</text>
+</g>
+<g id="init_par-node8" class="node">
+<title>e0</title>
+</g>
+<g id="init_par-edge7" class="edge">
+<title>ox&#45;&gt;e0</title>
+<path fill="none" stroke="green" d="M206.8,-95.36C206.8,-83 206.8,-59.04 206.8,-59.04"/>
+</g>
+<g id="init_par-node7" class="node">
+<title>oy</title>
+<text text-anchor="middle" x="128.8" y="-99.49" font-family="serif" font-size="9.00">y</text>
+</g>
+<g id="init_par-node9" class="node">
+<title>e1</title>
+</g>
+<g id="init_par-edge10" class="edge">
+<title>oy&#45;&gt;e1</title>
+<path fill="none" stroke="green" d="M128.8,-95.36C128.8,-83 128.8,-59.04 128.8,-59.04"/>
+</g>
+<g id="init_par-edge8" class="edge">
+<title>e0&#45;&gt;v0</title>
+<g id="init_par-a_edge8"><a xlink:title="e0: {v0,v1}">
+<path fill="none" stroke="green" d="M206.8,-57.6C206.8,-57.6 206.8,-35.46 206.8,-21.96"/>
+</a>
+</g>
+</g>
+<g id="init_par-edge9" class="edge">
+<title>e0&#45;&gt;v1</title>
+<g id="init_par-a_edge9"><a xlink:title="e0: {v0,v1}">
+<path fill="none" stroke="green" d="M206.8,-57.6C206.8,-57.6 237.24,-31.3 251.98,-18.56"/>
+</a>
+</g>
+</g>
+<g id="init_par-edge11" class="edge">
+<title>e1&#45;&gt;v2</title>
+<g id="init_par-a_edge11"><a xlink:title="e1: {v2,v3}">
+<path fill="none" stroke="green" d="M128.8,-57.6C128.8,-57.6 144.11,-33.42 152.48,-20.2"/>
+</a>
+</g>
+</g>
+<g id="init_par-edge12" class="edge">
+<title>e1&#45;&gt;v3</title>
+<g id="init_par-a_edge12"><a xlink:title="e1: {v2,v3}">
+<path fill="none" stroke="green" d="M128.8,-57.6C128.8,-57.6 113.49,-33.42 105.12,-20.2"/>
+</a>
+</g>
+</g>
+</g>
+</svg><figcaption>p || pp || c</figcaption></figure>
+  </div>
+  <p>To keep the regions apart in the initial state, write <code>big init_state = p || pp || c;</code>. Here <code>p + pp + c</code> also gives five regions, because p, pp and c share no names.</p>
+
+  <h3>Nesting needs one region</h3>
+  <div class="nest">
+    <code>R.(C{y}.1 | D{y}.1)</code><span class="ok">Accepted</span>
+    <code>R.(C{y}.1 || D{y}.1)</code><span class="bad">Error: Interfaces &lt;1, {y}&gt; and &lt;2, {y}&gt; do not match in the composition</span>
+  </div>
+  <p>With <code>ctrl R = 0</code>, <span class="m"><span class="ctl">R</span>.<i>G</i></span> places <i>G</i> in the single site of R, so the context’s inner face is <span class="m">⟨1, <span class="nm">{<i>y</i>}</span>⟩</span>. The merge product’s outer face, <span class="m">⟨1, <span class="nm">{<i>y</i>}</span>⟩</span>, matches. The parallel product’s, <span class="m">⟨2, <span class="nm">{<i>y</i>}</span>⟩</span>, does not: two regions cannot fill one site. This is what | is for. It turns several places into one place you can nest.</p>
+</section>
+
+<section id="regenerate" aria-labelledby="regenerate-h">
+  <h2 id="regenerate-h">Regenerating the drawings</h2>
+  <p>From this folder:</p>
+  <pre><code>nix-shell ../../../../shell.nix
+mkdir -p out
+bigrapher validate -d out -f svg expressions.big</code></pre>
+  <p><code>validate -d</code> writes one drawing per <code>big</code> declaration. Use <code>-f svg,json,txt</code> to also get BigraphER’s structured output, which is where the node numbers and links above come from. Create <code>out</code> first: when the folder is missing, BigraphER reports <code>`dot' command not found</code> even though Graphviz is installed.</p>
+  <p>The drawings of <code>C{y}.1 | D{y}.1</code> and <code>p || pp || c</code> come from a scratch copy of the model with two extra declarations, so <code>expressions.big</code> is unchanged. This page is a snapshot and does not update when the model changes.</p>
+</section>
+
+<footer class="sources">
+  <p>Definitions checked against BigraphER’s source in this repository: <code>tens</code>, <code>ppar</code> and <code>par</code> in <a href="../../../../bigraph-tools/bigraph/src/big.ml">bigraph-tools/bigraph/src/big.ml</a> (lines 147, 176, 186), and the name handling in <a href="../../../../bigraph-tools/bigraph/src/link.ml">bigraph-tools/bigraph/src/link.ml</a> (lines 283, 457).</p>
+  <p>Drawings, node numbers and error messages from BigraphER 2.0.0 with Graphviz 12.2.1.</p>
+</footer>
+
+</div>
+</body>
+</html>

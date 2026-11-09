@@ -1,0 +1,13 @@
+# Operators can be combined in expressions.
+# The precedence is as follows:
+
+# *
+# + 
+# | and || (the same precendece for these two)
+
+
+# Example:
+# A | B + C * D || E
+# is interpreted as:
+# (A | (B + (C * D))) || E
+

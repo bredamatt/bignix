@@ -1,0 +1,12 @@
+int n = 3;
+float rate = 0.5;
+string label = "x";
+ctrl A = 0;
+atomic ctrl B = 1; # No nesting, but has 1 link
+big b = A.1 | B{x}; # {x} indicates B ahs an open link named x
+
+
+begin brs
+    init b;
+    rules = [];
+end
