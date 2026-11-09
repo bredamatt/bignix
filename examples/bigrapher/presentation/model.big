@@ -1,0 +1,48 @@
+# Controls: kinds of node and their ports
+ctrl Outside = 0; 
+ctrl Site = 0; 
+ctrl Utilities = 0;
+ctrl Exchange = 1; 
+ctrl Interface = 2; 
+ctrl Compute = 1;  # diode ends
+ctrl Request = 0;
+ctrl Feed = 2; 
+ctrl Sensor = 1; 
+
+# Atomic controls: nodes that cannot be further decomposed
+atomic ctrl Screened = 0; 
+atomic ctrl Response = 0;
+atomic ctrl GPU = 1; 
+atomic ctrl Trace = 0;
+
+
+# An inference request has just arrived in the initial state
+big sidc = /d1 /d2 /p /g ( Outside.Sensor{g}.1
+  | Site.( Exchange{d1}.Request.1 | Interface{d1,d2}.1
+         | Compute{d2}.GPU{p} | Utilities.Feed{p,g}.1 ) );
+
+# The request's path: each diode is a one-way rule
+react forward_in = 
+    Exchange{d1}.(Request | id) || Interface{d1,d2}.id --> Exchange{d1}.id || Interface{d1,d2}.(Request | id);
+react screen = 
+    Interface{d1,d2}.(Request.1 | id) --> Interface{d1,d2}.(Request.Screened | id);
+react forward = 
+    Interface{d1,d2}.(Request.Screened | id) || Compute{d2}.id --> Interface{d1,d2}.id || Compute{d2}.(Request.Screened | id);
+
+# The power side channel
+react run = 
+    Compute{d2}.(Request.Screened | GPU{p} | id) || Feed{p,g}.1 --> Compute{d2}.(Response | GPU{p} | id) || Feed{p,g}.Trace;
+react condition = 
+    Feed{p,g}.Trace --> Feed{p,g}.1;
+react record = 
+    Feed{p,g}.Trace || Sensor{g}.1 --> Feed{p,g}.Trace || Sensor{g}.Trace;
+
+# Violation: a trace has leaked off the site to the attacker owned sensor
+big leak = Sensor{g}.Trace;   
+
+begin brs
+  init sidc;
+  rules = [ {condition},      # Adaptive control: fires first
+            {forward_in, screen, forward, run, record} ];
+  preds = { leak };
+end
