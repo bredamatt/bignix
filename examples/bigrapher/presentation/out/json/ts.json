@@ -1,0 +1,937 @@
+{
+  "v": [
+    [
+      99494422,
+      [
+        5,
+        {
+          "place_graph": {
+            "num_regions": 1,
+            "num_nodes": 10,
+            "num_sites": 0,
+            "rn": {
+              "r": 1,
+              "c": 10,
+              "r_major": [ [ 0, [ 2, 0 ] ] ],
+              "c_major": [ [ 0, [ 0 ] ], [ 2, [ 0 ] ] ]
+            },
+            "rs": { "r": 1, "c": 0, "r_major": [], "c_major": [] },
+            "nn": {
+              "r": 10,
+              "c": 10,
+              "r_major": [
+                [ 0, [ 1 ] ],
+                [ 2, [ 6, 5, 4, 3 ] ],
+                [ 3, [ 9 ] ],
+                [ 6, [ 8, 7 ] ]
+              ],
+              "c_major": [
+                [ 1, [ 0 ] ],
+                [ 3, [ 2 ] ],
+                [ 4, [ 2 ] ],
+                [ 5, [ 2 ] ],
+                [ 6, [ 2 ] ],
+                [ 7, [ 6 ] ],
+                [ 8, [ 6 ] ],
+                [ 9, [ 3 ] ]
+              ]
+            },
+            "ns": { "r": 10, "c": 0, "r_major": [], "c_major": [] },
+            "trans": {
+              "r": 10,
+              "c": 10,
+              "r_major": [
+                [ 0, [ 1 ] ],
+                [ 2, [ 9, 8, 7, 6, 5, 4, 3 ] ],
+                [ 3, [ 9 ] ],
+                [ 6, [ 8, 7 ] ]
+              ],
+              "c_major": [
+                [ 1, [ 0 ] ],
+                [ 3, [ 2 ] ],
+                [ 4, [ 2 ] ],
+                [ 5, [ 2 ] ],
+                [ 6, [ 2 ] ],
+                [ 7, [ 6, 2 ] ],
+                [ 8, [ 6, 2 ] ],
+                [ 9, [ 3, 2 ] ]
+              ]
+            }
+          },
+          "link_graph": [
+            { "inner": [], "outer": [], "ports": [ [ 1, 1 ], [ 9, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 4, 1 ], [ 5, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 5, 1 ], [ 6, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 8, 1 ], [ 9, 1 ] ] }
+          ],
+          "nodes": {
+            "ctrl": [
+              [
+                0,
+                {
+                  "ctrl_name": "Outside",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                1,
+                { "ctrl_name": "Sensor", "ctrl_params": [], "ctrl_arity": 1 }
+              ],
+              [
+                2,
+                { "ctrl_name": "Site", "ctrl_params": [], "ctrl_arity": 0 }
+              ],
+              [
+                3,
+                {
+                  "ctrl_name": "Utilities",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                4,
+                {
+                  "ctrl_name": "Exchange",
+                  "ctrl_params": [],
+                  "ctrl_arity": 1
+                }
+              ],
+              [
+                5,
+                {
+                  "ctrl_name": "Interface",
+                  "ctrl_params": [],
+                  "ctrl_arity": 2
+                }
+              ],
+              [
+                6,
+                {
+                  "ctrl_name": "Compute",
+                  "ctrl_params": [],
+                  "ctrl_arity": 1
+                }
+              ],
+              [
+                7,
+                {
+                  "ctrl_name": "Response",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                8, { "ctrl_name": "GPU", "ctrl_params": [], "ctrl_arity": 1 }
+              ],
+              [
+                9,
+                { "ctrl_name": "Feed", "ctrl_params": [], "ctrl_arity": 2 }
+              ]
+            ],
+            "sort": [
+              [ "Compute", [ 6 ] ],
+              [ "Exchange", [ 4 ] ],
+              [ "Feed", [ 9 ] ],
+              [ "GPU", [ 8 ] ],
+              [ "Interface", [ 5 ] ],
+              [ "Outside", [ 0 ] ],
+              [ "Response", [ 7 ] ],
+              [ "Sensor", [ 1 ] ],
+              [ "Site", [ 2 ] ],
+              [ "Utilities", [ 3 ] ]
+            ],
+            "size": 10
+          }
+        }
+      ]
+    ],
+    [
+      723607983,
+      [
+        0,
+        {
+          "place_graph": {
+            "num_regions": 1,
+            "num_nodes": 10,
+            "num_sites": 0,
+            "rn": {
+              "r": 1,
+              "c": 10,
+              "r_major": [ [ 0, [ 2, 0 ] ] ],
+              "c_major": [ [ 0, [ 0 ] ], [ 2, [ 0 ] ] ]
+            },
+            "rs": { "r": 1, "c": 0, "r_major": [], "c_major": [] },
+            "nn": {
+              "r": 10,
+              "c": 10,
+              "r_major": [
+                [ 0, [ 1 ] ],
+                [ 2, [ 8, 6, 5, 3 ] ],
+                [ 3, [ 4 ] ],
+                [ 6, [ 7 ] ],
+                [ 8, [ 9 ] ]
+              ],
+              "c_major": [
+                [ 1, [ 0 ] ],
+                [ 3, [ 2 ] ],
+                [ 4, [ 3 ] ],
+                [ 5, [ 2 ] ],
+                [ 6, [ 2 ] ],
+                [ 7, [ 6 ] ],
+                [ 8, [ 2 ] ],
+                [ 9, [ 8 ] ]
+              ]
+            },
+            "ns": { "r": 10, "c": 0, "r_major": [], "c_major": [] },
+            "trans": {
+              "r": 10,
+              "c": 10,
+              "r_major": [
+                [ 0, [ 1 ] ],
+                [ 2, [ 9, 8, 7, 6, 5, 4, 3 ] ],
+                [ 3, [ 4 ] ],
+                [ 6, [ 7 ] ],
+                [ 8, [ 9 ] ]
+              ],
+              "c_major": [
+                [ 1, [ 0 ] ],
+                [ 3, [ 2 ] ],
+                [ 4, [ 3, 2 ] ],
+                [ 5, [ 2 ] ],
+                [ 6, [ 2 ] ],
+                [ 7, [ 6, 2 ] ],
+                [ 8, [ 2 ] ],
+                [ 9, [ 8, 2 ] ]
+              ]
+            }
+          },
+          "link_graph": [
+            { "inner": [], "outer": [], "ports": [ [ 1, 1 ], [ 9, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 3, 1 ], [ 5, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 5, 1 ], [ 6, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 7, 1 ], [ 9, 1 ] ] }
+          ],
+          "nodes": {
+            "ctrl": [
+              [
+                0,
+                {
+                  "ctrl_name": "Outside",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                1,
+                { "ctrl_name": "Sensor", "ctrl_params": [], "ctrl_arity": 1 }
+              ],
+              [
+                2,
+                { "ctrl_name": "Site", "ctrl_params": [], "ctrl_arity": 0 }
+              ],
+              [
+                3,
+                {
+                  "ctrl_name": "Exchange",
+                  "ctrl_params": [],
+                  "ctrl_arity": 1
+                }
+              ],
+              [
+                4,
+                {
+                  "ctrl_name": "Request",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                5,
+                {
+                  "ctrl_name": "Interface",
+                  "ctrl_params": [],
+                  "ctrl_arity": 2
+                }
+              ],
+              [
+                6,
+                {
+                  "ctrl_name": "Compute",
+                  "ctrl_params": [],
+                  "ctrl_arity": 1
+                }
+              ],
+              [
+                7, { "ctrl_name": "GPU", "ctrl_params": [], "ctrl_arity": 1 }
+              ],
+              [
+                8,
+                {
+                  "ctrl_name": "Utilities",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                9,
+                { "ctrl_name": "Feed", "ctrl_params": [], "ctrl_arity": 2 }
+              ]
+            ],
+            "sort": [
+              [ "Compute", [ 6 ] ],
+              [ "Exchange", [ 3 ] ],
+              [ "Feed", [ 9 ] ],
+              [ "GPU", [ 7 ] ],
+              [ "Interface", [ 5 ] ],
+              [ "Outside", [ 0 ] ],
+              [ "Request", [ 4 ] ],
+              [ "Sensor", [ 1 ] ],
+              [ "Site", [ 2 ] ],
+              [ "Utilities", [ 8 ] ]
+            ],
+            "size": 10
+          }
+        }
+      ]
+    ],
+    [
+      685584405,
+      [
+        2,
+        {
+          "place_graph": {
+            "num_regions": 1,
+            "num_nodes": 11,
+            "num_sites": 0,
+            "rn": {
+              "r": 1,
+              "c": 11,
+              "r_major": [ [ 0, [ 2, 0 ] ] ],
+              "c_major": [ [ 0, [ 0 ] ], [ 2, [ 0 ] ] ]
+            },
+            "rs": { "r": 1, "c": 0, "r_major": [], "c_major": [] },
+            "nn": {
+              "r": 11,
+              "c": 11,
+              "r_major": [
+                [ 0, [ 1 ] ],
+                [ 2, [ 8, 7, 5, 3 ] ],
+                [ 3, [ 4 ] ],
+                [ 5, [ 6 ] ],
+                [ 8, [ 9 ] ],
+                [ 9, [ 10 ] ]
+              ],
+              "c_major": [
+                [ 1, [ 0 ] ],
+                [ 3, [ 2 ] ],
+                [ 4, [ 3 ] ],
+                [ 5, [ 2 ] ],
+                [ 6, [ 5 ] ],
+                [ 7, [ 2 ] ],
+                [ 8, [ 2 ] ],
+                [ 9, [ 8 ] ],
+                [ 10, [ 9 ] ]
+              ]
+            },
+            "ns": { "r": 11, "c": 0, "r_major": [], "c_major": [] },
+            "trans": {
+              "r": 11,
+              "c": 11,
+              "r_major": [
+                [ 0, [ 1 ] ],
+                [ 2, [ 10, 9, 8, 7, 6, 5, 4, 3 ] ],
+                [ 3, [ 4 ] ],
+                [ 5, [ 6 ] ],
+                [ 8, [ 10, 9 ] ],
+                [ 9, [ 10 ] ]
+              ],
+              "c_major": [
+                [ 1, [ 0 ] ],
+                [ 3, [ 2 ] ],
+                [ 4, [ 3, 2 ] ],
+                [ 5, [ 2 ] ],
+                [ 6, [ 5, 2 ] ],
+                [ 7, [ 2 ] ],
+                [ 8, [ 2 ] ],
+                [ 9, [ 8, 2 ] ],
+                [ 10, [ 9, 8, 2 ] ]
+              ]
+            }
+          },
+          "link_graph": [
+            { "inner": [], "outer": [], "ports": [ [ 1, 1 ], [ 6, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 3, 1 ], [ 8, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 4, 1 ], [ 6, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 7, 1 ], [ 8, 1 ] ] }
+          ],
+          "nodes": {
+            "ctrl": [
+              [
+                0,
+                {
+                  "ctrl_name": "Outside",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                1,
+                { "ctrl_name": "Sensor", "ctrl_params": [], "ctrl_arity": 1 }
+              ],
+              [
+                2,
+                { "ctrl_name": "Site", "ctrl_params": [], "ctrl_arity": 0 }
+              ],
+              [
+                3,
+                {
+                  "ctrl_name": "Compute",
+                  "ctrl_params": [],
+                  "ctrl_arity": 1
+                }
+              ],
+              [
+                4, { "ctrl_name": "GPU", "ctrl_params": [], "ctrl_arity": 1 }
+              ],
+              [
+                5,
+                {
+                  "ctrl_name": "Utilities",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                6,
+                { "ctrl_name": "Feed", "ctrl_params": [], "ctrl_arity": 2 }
+              ],
+              [
+                7,
+                {
+                  "ctrl_name": "Exchange",
+                  "ctrl_params": [],
+                  "ctrl_arity": 1
+                }
+              ],
+              [
+                8,
+                {
+                  "ctrl_name": "Interface",
+                  "ctrl_params": [],
+                  "ctrl_arity": 2
+                }
+              ],
+              [
+                9,
+                {
+                  "ctrl_name": "Request",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                10,
+                {
+                  "ctrl_name": "Screened",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ]
+            ],
+            "sort": [
+              [ "Compute", [ 3 ] ],
+              [ "Exchange", [ 7 ] ],
+              [ "Feed", [ 6 ] ],
+              [ "GPU", [ 4 ] ],
+              [ "Interface", [ 8 ] ],
+              [ "Outside", [ 0 ] ],
+              [ "Request", [ 9 ] ],
+              [ "Screened", [ 10 ] ],
+              [ "Sensor", [ 1 ] ],
+              [ "Site", [ 2 ] ],
+              [ "Utilities", [ 5 ] ]
+            ],
+            "size": 11
+          }
+        }
+      ]
+    ],
+    [
+      575132562,
+      [
+        1,
+        {
+          "place_graph": {
+            "num_regions": 1,
+            "num_nodes": 10,
+            "num_sites": 0,
+            "rn": {
+              "r": 1,
+              "c": 10,
+              "r_major": [ [ 0, [ 2, 0 ] ] ],
+              "c_major": [ [ 0, [ 0 ] ], [ 2, [ 0 ] ] ]
+            },
+            "rs": { "r": 1, "c": 0, "r_major": [], "c_major": [] },
+            "nn": {
+              "r": 10,
+              "c": 10,
+              "r_major": [
+                [ 0, [ 1 ] ],
+                [ 2, [ 8, 7, 5, 3 ] ],
+                [ 3, [ 4 ] ],
+                [ 5, [ 6 ] ],
+                [ 8, [ 9 ] ]
+              ],
+              "c_major": [
+                [ 1, [ 0 ] ],
+                [ 3, [ 2 ] ],
+                [ 4, [ 3 ] ],
+                [ 5, [ 2 ] ],
+                [ 6, [ 5 ] ],
+                [ 7, [ 2 ] ],
+                [ 8, [ 2 ] ],
+                [ 9, [ 8 ] ]
+              ]
+            },
+            "ns": { "r": 10, "c": 0, "r_major": [], "c_major": [] },
+            "trans": {
+              "r": 10,
+              "c": 10,
+              "r_major": [
+                [ 0, [ 1 ] ],
+                [ 2, [ 9, 8, 7, 6, 5, 4, 3 ] ],
+                [ 3, [ 4 ] ],
+                [ 5, [ 6 ] ],
+                [ 8, [ 9 ] ]
+              ],
+              "c_major": [
+                [ 1, [ 0 ] ],
+                [ 3, [ 2 ] ],
+                [ 4, [ 3, 2 ] ],
+                [ 5, [ 2 ] ],
+                [ 6, [ 5, 2 ] ],
+                [ 7, [ 2 ] ],
+                [ 8, [ 2 ] ],
+                [ 9, [ 8, 2 ] ]
+              ]
+            }
+          },
+          "link_graph": [
+            { "inner": [], "outer": [], "ports": [ [ 1, 1 ], [ 6, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 3, 1 ], [ 8, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 4, 1 ], [ 6, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 7, 1 ], [ 8, 1 ] ] }
+          ],
+          "nodes": {
+            "ctrl": [
+              [
+                0,
+                {
+                  "ctrl_name": "Outside",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                1,
+                { "ctrl_name": "Sensor", "ctrl_params": [], "ctrl_arity": 1 }
+              ],
+              [
+                2,
+                { "ctrl_name": "Site", "ctrl_params": [], "ctrl_arity": 0 }
+              ],
+              [
+                3,
+                {
+                  "ctrl_name": "Compute",
+                  "ctrl_params": [],
+                  "ctrl_arity": 1
+                }
+              ],
+              [
+                4, { "ctrl_name": "GPU", "ctrl_params": [], "ctrl_arity": 1 }
+              ],
+              [
+                5,
+                {
+                  "ctrl_name": "Utilities",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                6,
+                { "ctrl_name": "Feed", "ctrl_params": [], "ctrl_arity": 2 }
+              ],
+              [
+                7,
+                {
+                  "ctrl_name": "Exchange",
+                  "ctrl_params": [],
+                  "ctrl_arity": 1
+                }
+              ],
+              [
+                8,
+                {
+                  "ctrl_name": "Interface",
+                  "ctrl_params": [],
+                  "ctrl_arity": 2
+                }
+              ],
+              [
+                9,
+                {
+                  "ctrl_name": "Request",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ]
+            ],
+            "sort": [
+              [ "Compute", [ 3 ] ],
+              [ "Exchange", [ 7 ] ],
+              [ "Feed", [ 6 ] ],
+              [ "GPU", [ 4 ] ],
+              [ "Interface", [ 8 ] ],
+              [ "Outside", [ 0 ] ],
+              [ "Request", [ 9 ] ],
+              [ "Sensor", [ 1 ] ],
+              [ "Site", [ 2 ] ],
+              [ "Utilities", [ 5 ] ]
+            ],
+            "size": 10
+          }
+        }
+      ]
+    ],
+    [
+      956387041,
+      [
+        3,
+        {
+          "place_graph": {
+            "num_regions": 1,
+            "num_nodes": 11,
+            "num_sites": 0,
+            "rn": {
+              "r": 1,
+              "c": 11,
+              "r_major": [ [ 0, [ 2, 0 ] ] ],
+              "c_major": [ [ 0, [ 0 ] ], [ 2, [ 0 ] ] ]
+            },
+            "rs": { "r": 1, "c": 0, "r_major": [], "c_major": [] },
+            "nn": {
+              "r": 11,
+              "c": 11,
+              "r_major": [
+                [ 0, [ 1 ] ],
+                [ 2, [ 7, 6, 5, 3 ] ],
+                [ 3, [ 4 ] ],
+                [ 7, [ 10, 8 ] ],
+                [ 8, [ 9 ] ]
+              ],
+              "c_major": [
+                [ 1, [ 0 ] ],
+                [ 3, [ 2 ] ],
+                [ 4, [ 3 ] ],
+                [ 5, [ 2 ] ],
+                [ 6, [ 2 ] ],
+                [ 7, [ 2 ] ],
+                [ 8, [ 7 ] ],
+                [ 9, [ 8 ] ],
+                [ 10, [ 7 ] ]
+              ]
+            },
+            "ns": { "r": 11, "c": 0, "r_major": [], "c_major": [] },
+            "trans": {
+              "r": 11,
+              "c": 11,
+              "r_major": [
+                [ 0, [ 1 ] ],
+                [ 2, [ 10, 9, 8, 7, 6, 5, 4, 3 ] ],
+                [ 3, [ 4 ] ],
+                [ 7, [ 10, 9, 8 ] ],
+                [ 8, [ 9 ] ]
+              ],
+              "c_major": [
+                [ 1, [ 0 ] ],
+                [ 3, [ 2 ] ],
+                [ 4, [ 3, 2 ] ],
+                [ 5, [ 2 ] ],
+                [ 6, [ 2 ] ],
+                [ 7, [ 2 ] ],
+                [ 8, [ 7, 2 ] ],
+                [ 9, [ 8, 7, 2 ] ],
+                [ 10, [ 7, 2 ] ]
+              ]
+            }
+          },
+          "link_graph": [
+            { "inner": [], "outer": [], "ports": [ [ 1, 1 ], [ 4, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 4, 1 ], [ 10, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 5, 1 ], [ 6, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 6, 1 ], [ 7, 1 ] ] }
+          ],
+          "nodes": {
+            "ctrl": [
+              [
+                0,
+                {
+                  "ctrl_name": "Outside",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                1,
+                { "ctrl_name": "Sensor", "ctrl_params": [], "ctrl_arity": 1 }
+              ],
+              [
+                2,
+                { "ctrl_name": "Site", "ctrl_params": [], "ctrl_arity": 0 }
+              ],
+              [
+                3,
+                {
+                  "ctrl_name": "Utilities",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                4,
+                { "ctrl_name": "Feed", "ctrl_params": [], "ctrl_arity": 2 }
+              ],
+              [
+                5,
+                {
+                  "ctrl_name": "Exchange",
+                  "ctrl_params": [],
+                  "ctrl_arity": 1
+                }
+              ],
+              [
+                6,
+                {
+                  "ctrl_name": "Interface",
+                  "ctrl_params": [],
+                  "ctrl_arity": 2
+                }
+              ],
+              [
+                7,
+                {
+                  "ctrl_name": "Compute",
+                  "ctrl_params": [],
+                  "ctrl_arity": 1
+                }
+              ],
+              [
+                8,
+                {
+                  "ctrl_name": "Request",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                9,
+                {
+                  "ctrl_name": "Screened",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                10,
+                { "ctrl_name": "GPU", "ctrl_params": [], "ctrl_arity": 1 }
+              ]
+            ],
+            "sort": [
+              [ "Compute", [ 7 ] ],
+              [ "Exchange", [ 5 ] ],
+              [ "Feed", [ 4 ] ],
+              [ "GPU", [ 10 ] ],
+              [ "Interface", [ 6 ] ],
+              [ "Outside", [ 0 ] ],
+              [ "Request", [ 8 ] ],
+              [ "Screened", [ 9 ] ],
+              [ "Sensor", [ 1 ] ],
+              [ "Site", [ 2 ] ],
+              [ "Utilities", [ 3 ] ]
+            ],
+            "size": 11
+          }
+        }
+      ]
+    ],
+    [
+      469694478,
+      [
+        4,
+        {
+          "place_graph": {
+            "num_regions": 1,
+            "num_nodes": 11,
+            "num_sites": 0,
+            "rn": {
+              "r": 1,
+              "c": 11,
+              "r_major": [ [ 0, [ 2, 0 ] ] ],
+              "c_major": [ [ 0, [ 0 ] ], [ 2, [ 0 ] ] ]
+            },
+            "rs": { "r": 1, "c": 0, "r_major": [], "c_major": [] },
+            "nn": {
+              "r": 11,
+              "c": 11,
+              "r_major": [
+                [ 0, [ 1 ] ],
+                [ 2, [ 6, 5, 4, 3 ] ],
+                [ 3, [ 9 ] ],
+                [ 6, [ 8, 7 ] ],
+                [ 9, [ 10 ] ]
+              ],
+              "c_major": [
+                [ 1, [ 0 ] ],
+                [ 3, [ 2 ] ],
+                [ 4, [ 2 ] ],
+                [ 5, [ 2 ] ],
+                [ 6, [ 2 ] ],
+                [ 7, [ 6 ] ],
+                [ 8, [ 6 ] ],
+                [ 9, [ 3 ] ],
+                [ 10, [ 9 ] ]
+              ]
+            },
+            "ns": { "r": 11, "c": 0, "r_major": [], "c_major": [] },
+            "trans": {
+              "r": 11,
+              "c": 11,
+              "r_major": [
+                [ 0, [ 1 ] ],
+                [ 2, [ 10, 9, 8, 7, 6, 5, 4, 3 ] ],
+                [ 3, [ 10, 9 ] ],
+                [ 6, [ 8, 7 ] ],
+                [ 9, [ 10 ] ]
+              ],
+              "c_major": [
+                [ 1, [ 0 ] ],
+                [ 3, [ 2 ] ],
+                [ 4, [ 2 ] ],
+                [ 5, [ 2 ] ],
+                [ 6, [ 2 ] ],
+                [ 7, [ 6, 2 ] ],
+                [ 8, [ 6, 2 ] ],
+                [ 9, [ 3, 2 ] ],
+                [ 10, [ 9, 3, 2 ] ]
+              ]
+            }
+          },
+          "link_graph": [
+            { "inner": [], "outer": [], "ports": [ [ 1, 1 ], [ 9, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 4, 1 ], [ 5, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 5, 1 ], [ 6, 1 ] ] },
+            { "inner": [], "outer": [], "ports": [ [ 8, 1 ], [ 9, 1 ] ] }
+          ],
+          "nodes": {
+            "ctrl": [
+              [
+                0,
+                {
+                  "ctrl_name": "Outside",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                1,
+                { "ctrl_name": "Sensor", "ctrl_params": [], "ctrl_arity": 1 }
+              ],
+              [
+                2,
+                { "ctrl_name": "Site", "ctrl_params": [], "ctrl_arity": 0 }
+              ],
+              [
+                3,
+                {
+                  "ctrl_name": "Utilities",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                4,
+                {
+                  "ctrl_name": "Exchange",
+                  "ctrl_params": [],
+                  "ctrl_arity": 1
+                }
+              ],
+              [
+                5,
+                {
+                  "ctrl_name": "Interface",
+                  "ctrl_params": [],
+                  "ctrl_arity": 2
+                }
+              ],
+              [
+                6,
+                {
+                  "ctrl_name": "Compute",
+                  "ctrl_params": [],
+                  "ctrl_arity": 1
+                }
+              ],
+              [
+                7,
+                {
+                  "ctrl_name": "Response",
+                  "ctrl_params": [],
+                  "ctrl_arity": 0
+                }
+              ],
+              [
+                8, { "ctrl_name": "GPU", "ctrl_params": [], "ctrl_arity": 1 }
+              ],
+              [
+                9,
+                { "ctrl_name": "Feed", "ctrl_params": [], "ctrl_arity": 2 }
+              ],
+              [
+                10,
+                { "ctrl_name": "Trace", "ctrl_params": [], "ctrl_arity": 0 }
+              ]
+            ],
+            "sort": [
+              [ "Compute", [ 6 ] ],
+              [ "Exchange", [ 4 ] ],
+              [ "Feed", [ 9 ] ],
+              [ "GPU", [ 8 ] ],
+              [ "Interface", [ 5 ] ],
+              [ "Outside", [ 0 ] ],
+              [ "Response", [ 7 ] ],
+              [ "Sensor", [ 1 ] ],
+              [ "Site", [ 2 ] ],
+              [ "Trace", [ 10 ] ],
+              [ "Utilities", [ 3 ] ]
+            ],
+            "size": 11
+          }
+        }
+      ]
+    ]
+  ],
+  "e": [
+    [ 2, [ 3, null, "forward" ] ],
+    [ 0, [ 1, null, "forward_in" ] ],
+    [ 1, [ 2, null, "screen" ] ],
+    [ 4, [ 5, null, "condition" ] ],
+    [ 3, [ 4, null, "run" ] ]
+  ],
+  "l": [],
+  "preds": [ [ "leak", 0 ] ]
+}
