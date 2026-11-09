@@ -1,0 +1,7 @@
+ctrl A = 0;
+big b = A.1;
+
+begin brs
+    init b;
+    rules = [];
+end

@@ -1,0 +1,20 @@
+ctrl A = 1;
+ctrl B = 1;
+ctrl C = 1;
+ctrl D = 1;
+ctrl P = 0;
+ctrl Q = 0;
+
+
+big t = P.1 + Q.1; # tensor product juxtaposes two bigraphs side by side (in separate regions)
+big c = id(2) * t; # composition places one bigraph into the sites of another. For instance t's regions fill id(2)'s sites, with common names merged when present
+big p = A{x}.1 | B{x}.1; # Merge product | places entities as siblings in the same region. Here, A and B are siblings, and because both use the name x for their links, these links are merged into a single hyperedge.
+big pp = C{y}.1 || D{y}.1; # The parallel product || shares common names aacross two terms while keeping them in separate regions. In this example, the name y is shared, giving a single hyperedge, whereas C and D occupy different regions.
+
+# Use all bigraphs in the initial state
+big init_state = p | pp | c;
+
+begin brs
+    init init_state;
+    rules = [];
+end

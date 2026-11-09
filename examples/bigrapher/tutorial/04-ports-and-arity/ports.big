@@ -1,0 +1,14 @@
+ctrl Hub = 3; # Arity 3 (i.e. there are 3 ports)
+ctrl Spoke = 1;
+
+# Three independent spokes each connected to a different port of the hub
+
+big net = Hub{x,y,z}.1  | Spoke{x}.1 | Spoke{y}.1 
+| Spoke{z}.1;
+
+# Note that ports are tracked as a multiset, not a set. Therefore, multiplicities matter for amtching.
+
+begin brs
+    init net;
+    rules = [];
+end
