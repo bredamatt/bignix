@@ -1,0 +1,12 @@
+{
+  "model": "routes.big",
+  "checks": [
+    { "id": "L1", "failure": "failed", "description": "The run reaches Fail" },
+    { "id": "H1", "failure": "dead", "description": "The run is stuck in Dead" },
+    { "id": "SC1", "failure": "failed & dead", "description": "Fail and Dead never hold together" }
+  ],
+  "choice": { "mode": "free", "step_cost": 0.01 },
+  "max_depth": 10,
+  "penalty": 100,
+  "solver": { "type": "mcts", "iterations": 1000, "exploration": 1.0, "seed": 0 }
+}

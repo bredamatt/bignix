@@ -1,0 +1,23 @@
+{
+  "model": "digital-key.big",
+  "checks": [
+    { "id": "L-1", "failure": "stolen",
+      "description": "Loss of physical property" },
+    { "id": "V-1", "failure": "door_unlocked & shows_locked",
+      "description": "Fail to lock the vehicle without being detected" },
+    { "id": "V-2", "failure": "shows_failed",
+      "description": "Fail to lock the vehicle, which can be detected by the user" },
+    { "id": "V-3", "failure": "leaked",
+      "description": "Leak sensitive information" },
+    { "id": "SC-1", "failure": "(door_unlocked & shows_locked) | shows_failed",
+      "description": "Missions should be completed successfully" },
+    { "id": "D_CA1_ICA2", "failure": "registered & leaked",
+      "description": "The door controller registers with data leakage risks" },
+    { "id": "U_CA2_ICA1", "failure": "sent_unlock",
+      "description": "The user is fooled to send wrong commands" },
+    { "id": "U_CA2_ICA1_LS2", "failure": "door_unlocked & shows_locked & !sent_unlock",
+      "description": "The vehicle state is presented wrongly" }
+  ],
+  "max_depth": 12,
+  "solver": { "type": "exact" }
+}
