@@ -33,6 +33,7 @@ Computer Science 577 (2015): 43-73.][share]
 - [MiniSAT: a minimalistic and high-performance SAT solver][minisat]
 - [MiniCARD cardinality solver][minicard]
 - [Glasgow Subgraph Solver][gbs]
+- [Adaptive Stress Testing][ast]
 
 [milner]:  <http://dl.acm.org/citation.cfm?id=1540607> "Robin Milner. *The space and motion of communicating agents*. Cambridge University Press (2009)."
 [share]:   <http://doi.org/10.1016/j.tcs.2015.02.011> "Michele Sevegnani and Muffy Calder. *Bigraphs with sharing*. Theoretical Computer Science 577 (2015): 43-73."
@@ -44,3 +45,4 @@ Computer Science 577 (2015): 43-73.][share]
 [minicard]: <https://github.com/liffiton/minicard> "MiniCARD is a cardinality solver based on MiniSAT"
 [opam]:    <https://opam.ocaml.org/> "OPAM: OCaml package manager"
 [gbs]: <https://github.com/ciaranm/glasgow-subgraph-solver> "Glasgow Subgraph Solver"
+[ast]: <https://arxiv.org/abs/1811.02188> "Adaptive Stress Testing: Finding Likely Failure Events with Reinforcement Learning"
