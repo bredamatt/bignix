@@ -1,0 +1,30 @@
+# Two routes from Start to Fail. The short route is one unlikely step
+# (0.1). The long route is two even steps (0.5 * 0.5 = 0.25). A missed
+# step ends in Dead, where no rule applies.
+
+atomic ctrl Start = 0;
+atomic ctrl Mid = 0;
+atomic ctrl Fail = 0;
+atomic ctrl Dead = 0;
+
+react short_hit  = Start -[ 1. ]-> Fail;
+react short_miss = Start -[ 9. ]-> Dead;
+react go_hit     = Start -[ 1. ]-> Mid;
+react go_miss    = Start -[ 1. ]-> Dead;
+react push_hit   = Mid -[ 1. ]-> Fail;
+react push_miss  = Mid -[ 1. ]-> Dead;
+
+big start = Start;
+big failed = Fail;
+big dead = Dead;
+
+begin abrs
+  init start;
+  rules = [ { short_hit, short_miss, go_hit, go_miss, push_hit, push_miss } ];
+  actions = [
+    short = { short_hit, short_miss },
+    go = { go_hit, go_miss },
+    push = { push_hit, push_miss }
+  ];
+  preds = { failed, dead };
+end

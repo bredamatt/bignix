@@ -1,0 +1,15 @@
+{
+  "model": "../models/routes.big",
+  "checks": [
+    {
+      "id": "F",
+      "failure": "failed"
+    }
+  ],
+  "choice": {
+    "mode": "weights",
+    "weights": [
+      1
+    ]
+  }
+}

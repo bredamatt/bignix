@@ -1,0 +1,20 @@
+{
+  "model": "../models/routes.big",
+  "checks": [
+    {
+      "id": "F",
+      "failure": "failed"
+    }
+  ],
+  "choice": {
+    "mode": "uniform"
+  },
+  "max_depth": 5,
+  "penalty": 50,
+  "solver": {
+    "type": "mcts",
+    "iterations": 300,
+    "exploration": 0.5,
+    "seed": 7
+  }
+}
