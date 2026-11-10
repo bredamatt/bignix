@@ -1,0 +1,3 @@
+(executables
+ (names expressions reaction_rules conditional reactive_blocks action)
+ (libraries bigraph))
