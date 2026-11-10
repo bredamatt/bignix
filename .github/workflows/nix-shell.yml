@@ -1,6 +1,7 @@
-# Builds the Nix shell on Linux (x86_64, aarch64) and macOS, then checks
-# that the tools are on PATH and that a program using the bigraph library
-# compiles and runs. Windows users run the Linux shell under WSL2.
+# Builds the Nix shell on Linux (x86_64, aarch64) and macOS, which also
+# builds ast-sim and runs its tests. Then checks that the tools are on PATH
+# and that a program using the bigraph library compiles and runs. Windows
+# users run the Linux shell under WSL2.
 name: nix-shell
 
 # Runs on pull requests and on master, only when the shell's inputs change.
@@ -10,14 +11,18 @@ on:
     branches: [master]
     paths:
       - shell.nix
+      - default.nix
       - nix/**
       - bigraph-tools
+      - ast-sim/**
       - .github/workflows/nix-shell.yml
   pull_request:
     paths:
       - shell.nix
+      - default.nix
       - nix/**
       - bigraph-tools
+      - ast-sim/**
       - .github/workflows/nix-shell.yml
   workflow_dispatch:
 
@@ -57,7 +62,7 @@ jobs:
           # nix-shell runs its shell with bashInteractive from <nixpkgs>, or
           # with the bash on PATH if there is no <nixpkgs>. On macOS that is
           # Bash 3.2, which nixpkgs rejects, so the shell fails to start.
-          # Use the nixpkgs that shell.nix pins; keep the two in sync.
+          # Use the nixpkgs that nix/nixpkgs.nix pins; keep the two in sync.
           nix_path: nixpkgs=https://github.com/NixOS/nixpkgs/archive/25.05.tar.gz
 
       - name: Build the shell
@@ -69,7 +74,7 @@ jobs:
           # shellcheck disable=SC2016
           nix-shell --run '
             set -e
-            for tool in ocaml dune bigrapher prism mcrl22lps pbessolve dot jq; do
+            for tool in ocaml dune bigrapher ast-sim prism mcrl22lps pbessolve dot jq; do
               command -v "$tool"
             done
           '

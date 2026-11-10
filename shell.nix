@@ -4,22 +4,15 @@
 #   make test        # inside the shell
 #
 # Provides OCaml, dune, the bigraph library and bigrapher CLI (built from
-# the bigraph-tools submodule), alcotest, editor tooling, graphviz, the PRISM
-# model checker and the mCRL2 toolset.
+# the bigraph-tools submodule), the ast-sim stress tester, alcotest, editor
+# tooling, graphviz, the PRISM model checker and the mCRL2 toolset.
 {
-  pkgs ? import (builtins.fetchTarball {
-    # nixpkgs 25.05: OCaml 5.3.0, dune 3.18
-    url = "https://github.com/NixOS/nixpkgs/archive/25.05.tar.gz";
-    sha256 = "1915r28xc4znrh2vf4rrjnxldw2imysz819gzhk9qlrkqanmfsxd";
-  }) { },
+  pkgs ? import ./nix/nixpkgs.nix,
 }:
 
 let
   ocamlPackages = pkgs.ocamlPackages;
-  bigraph-tools = import ./nix/bigraph-tools.nix {
-    inherit pkgs;
-    src = ./bigraph-tools;
-  };
+  inherit (import ./default.nix { inherit pkgs; }) bigraph-tools ast-sim;
   # The model checkers come from nixpkgs 26.05. In 25.05, mCRL2 is marked
   # broken on macOS, and PRISM 4.8.1 is not in the binary cache for Linux
   # and fails to build there (its bundled lp_solve does not compile with
@@ -42,6 +35,7 @@ pkgs.mkShell {
   nativeBuildInputs = [
     ocamlPackages.ocaml
     ocamlPackages.dune_3
+    ocamlPackages.menhir # ast-sim builds bigrapher's .big parser
     ocamlPackages.findlib # its setup hook puts buildInputs on OCAMLPATH
     ocamlPackages.ocaml-lsp
     pkgs.ocamlformat
@@ -58,11 +52,14 @@ pkgs.mkShell {
 
   shellHook = ''
     export PATH="${mcrl2Tools}:$PATH"
+    # Where ast-sim's dune build finds bigrapher's parser sources.
+    export BIGRAPHER_SRC="${bigraph-tools.src}/bigrapher"
   '';
 
-  # Libraries (and the bigrapher binary).
+  # Libraries (and the bigrapher and ast-sim binaries).
   buildInputs = [
     bigraph-tools
+    ast-sim
     ocamlPackages.alcotest
   ];
 }
