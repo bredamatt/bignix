@@ -1,0 +1,5 @@
+(executable
+ (name main)
+ (public_name ast-sim)
+ (package ast-sim)
+ (libraries ast_sim))

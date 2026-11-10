@@ -1,0 +1,7 @@
+(lang dune 3.0)
+
+(using menhir 2.1)
+
+(package
+ (name ast-sim)
+ (synopsis "Adaptive stress testing of action bigraphical reactive systems"))

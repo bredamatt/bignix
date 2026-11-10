@@ -1,0 +1,215 @@
+# A Bluetooth digital key for a vehicle, with the rows of a published
+# STPA-Sec analysis as predicates.
+#
+# The system and the analysis are from the case study in:
+#   J. Yu, S. Wagner, F. Luo. "Data-Flow-Based Extension of the
+#   System-Theoretic Process Analysis for Security (STPA-Sec)".
+#   arXiv:2006.02930, 2020. Tables VI, IX and X, Fig. 5.
+#
+# A user locks and unlocks the doors of a vehicle from a smartphone. The
+# door controller in the vehicle first registers at a cloud server. The
+# phone then sends lock and unlock commands to the door controller over
+# Bluetooth, and shows the user the result.
+#
+# This model follows one mission: the user is at the unlocked vehicle,
+# locks it from the phone, and walks away.
+#
+# From the paper (its identifiers and wording):
+#   L-1         Loss of physical property (the vehicle and properties in it)
+#   V-1         Fail to lock the vehicle without being detected
+#   V-2         Fail to lock or unlock the vehicle, which can be detected by
+#               the user
+#   V-3         Leak sensitive information
+#   D_CA1_ICA2  The door controller registers with data leakage risks
+#   U_CA2_ICA1  The user is fooled to send wrong commands
+#   U_CA2_ICA1_LS1  The user interface of the smartphone is modified to
+#               guide the user to send wrong commands
+#   U_CA2_ICA1_LS2  The vehicle state is presented wrongly, which leads to
+#               the user's wrong behaviors
+#
+# Not from the paper: this model, what the attacker can do in it, and the
+# probabilities below, which are placeholders.
+
+# --- Probabilities ---------------------------------------------------------
+
+float p_tamper = 0.05;  # the attacker gets a modified app onto the phone
+float p_jam = 0.5;      # a jammed Bluetooth command is lost
+float p_spoof = 0.05;   # the attacker gets a false result onto the display
+float p_break = 0.01;   # the attacker reads registration data it has captured
+
+# --- Signature -------------------------------------------------------------
+
+# Where the user can be
+ctrl AtVehicle = 0;
+ctrl Away = 0;
+
+# The components of the control structure (Fig. 5 of the paper), and their
+# links: wifi (phone, server), bt (phone, door controller), net (door
+# controller, server)
+ctrl User = 0;
+ctrl Phone = 2;              # links: wifi, bt
+ctrl Server = 2;             # links: wifi, net
+ctrl Vehicle = 0;
+ctrl Door = 2;               # the door controller; links: bt, net
+
+# The phone: its app, what it shows, and the last command it sent
+atomic ctrl App = 0;
+atomic ctrl ModifiedApp = 0;
+atomic ctrl Ready = 0;
+atomic ctrl ShowsLocked = 0;
+atomic ctrl ShowsFailed = 0;
+atomic ctrl SentLock = 0;
+atomic ctrl SentUnlock = 0;
+
+# The door controller
+atomic ctrl Unregistered = 0;
+atomic ctrl Registered = 0;
+atomic ctrl Unlocked = 0;
+atomic ctrl Locked = 0;
+
+# The attacker, its devices on a link, and what it has got
+ctrl Attacker = 0;
+atomic ctrl Jammer = 1;
+atomic ctrl Sniffer = 1;
+atomic ctrl RegistrationData = 0;
+atomic ctrl Loot = 0;
+
+# --- Initial state ---------------------------------------------------------
+
+big s0 =
+  /wifi /bt /net
+  ( AtVehicle.( User.Phone{wifi, bt}.(App | Ready)
+              | Vehicle.Door{bt, net}.(Unlocked | Unregistered) )
+  | Away.1
+  | Server{wifi, net}.1
+  | Attacker.1 );
+
+# --- Door controller: register at the server (D_CA1) -----------------------
+
+react register_ok =
+  Door{b, n}.(Unregistered | id)
+  -[ 1. - p_break ]->
+  Door{b, n}.(Registered | id);
+
+# D_CA1_ICA2: with a sniffer on the link to the server, the attacker may
+# read the registration data.
+react register_leak =
+  Door{b, n}.(Unregistered | id) || Attacker.(Sniffer{n} | id)
+  -[ p_break ]->
+  Door{b, n}.(Registered | id)
+    || Attacker.(Sniffer{n} | RegistrationData | id);
+
+# --- User: lock the doors from the phone (U_CA2) ---------------------------
+
+react lock_ok =
+  Phone{w, b}.(App | Ready) || Door{b, n}.(Unlocked | Registered)
+  -[ 1. - p_jam ]->
+  Phone{w, b}.(App | ShowsLocked | SentLock)
+    || Door{b, n}.(Locked | Registered);
+
+# The command is lost to a jammer. The phone gets no answer and says so.
+react lock_jammed =
+  Phone{w, b}.(App | Ready) || Door{b, n}.(Unlocked | Registered)
+    || Attacker.(Jammer{b} | id)
+  -[ p_jam ]->
+  Phone{w, b}.(App | ShowsFailed | SentLock)
+    || Door{b, n}.(Unlocked | Registered)
+    || Attacker.(Jammer{b} | id);
+
+# U_CA2_ICA1, LS1: in the modified app the lock button sends unlock, and
+# the app shows that the doors are locked.
+react lock_fooled =
+  Phone{w, b}.(ModifiedApp | Ready)
+  -[ 1. ]->
+  Phone{w, b}.(ModifiedApp | ShowsLocked | SentUnlock);
+
+# After a failure the user tries again.
+react retry =
+  Phone{w, b}.(ShowsFailed | SentLock | id)
+  -[ 1. ]->
+  Phone{w, b}.(Ready | id);
+
+# The user walks away once the phone shows that the doors are locked.
+react leave =
+  AtVehicle.(User.id | id) || Away.id
+  -[ 1. ]->
+  AtVehicle.id || Away.(User.id | id) @[1, 0, 2]
+  if ShowsLocked in param;
+
+# --- Attacker --------------------------------------------------------------
+
+# LS1: modify the user interface of the phone.
+react modify_ok =
+  Phone{w, b}.(App | id)
+  -[ p_tamper ]->
+  Phone{w, b}.(ModifiedApp | id);
+
+react modify_fail =
+  Phone{w, b}.(App | id)
+  -[ 1. - p_tamper ]->
+  Phone{w, b}.(App | id);
+
+# Put a jammer on the Bluetooth link, or a sniffer on the link between the
+# door controller and the server. The ports of a node are not ordered, so
+# each rule names both ends of the link it means.
+react jam_bluetooth =
+  Phone{w, b} || Door{b, n} || Attacker.id
+  -[ 1. ]->
+  Phone{w, b} || Door{b, n} || Attacker.(Jammer{b} | id)
+  if !Jammer{x} in param;
+
+react sniff_registration =
+  Door{b, n} || Server{w, n} || Attacker.id
+  -[ 1. ]->
+  Door{b, n} || Server{w, n} || Attacker.(Sniffer{n} | id)
+  if !Sniffer{x} in param;
+
+# LS2: present the vehicle state wrongly. After jamming a command, show
+# on the phone that the doors are locked.
+react spoof_ok =
+  Phone{w, b}.(ShowsFailed | id) || Attacker.(Jammer{b} | id)
+  -[ p_spoof ]->
+  Phone{w, b}.(ShowsLocked | id) || Attacker.(Jammer{b} | id);
+
+react spoof_fail =
+  Phone{w, b}.(ShowsFailed | id) || Attacker.(Jammer{b} | id)
+  -[ 1. - p_spoof ]->
+  Phone{w, b}.(ShowsFailed | id) || Attacker.(Jammer{b} | id);
+
+# Take what is in an unlocked vehicle while the user is away.
+react steal =
+  AtVehicle.(Vehicle.Door{b, n}.(Unlocked | id) | id) || Attacker.id
+  -[ 1. ]->
+  AtVehicle.(Vehicle.Door{b, n}.(Unlocked | id) | id) || Attacker.(Loot | id)
+  if !User.id in param, !Loot in param;
+
+# --- Predicates ------------------------------------------------------------
+
+big stolen = Loot;                       # L-1
+big door_unlocked = Unlocked;
+big shows_locked = ShowsLocked;
+big shows_failed = ShowsFailed;          # V-2
+big leaked = RegistrationData;           # V-3
+big registered = Registered;
+big sent_unlock = SentUnlock;            # U_CA2_ICA1
+
+begin abrs
+  init s0;
+  rules = [ { register_ok, register_leak,
+              lock_ok, lock_jammed, lock_fooled, retry, leave,
+              modify_ok, modify_fail, jam_bluetooth, sniff_registration,
+              spoof_ok, spoof_fail, steal } ];
+  actions = [
+    register = { register_ok, register_leak },
+    lock     = { lock_ok, lock_jammed, lock_fooled },
+    retry    = { retry },
+    leave    = { leave },
+    modify   = { modify_ok, modify_fail },
+    jam      = { jam_bluetooth },
+    sniff    = { sniff_registration },
+    spoof    = { spoof_ok, spoof_fail },
+    steal    = { steal }
+  ];
+  preds = { stolen, door_unlocked, shows_locked, shows_failed, leaked,
+            registered, sent_unlock };
+end

@@ -1,0 +1,33 @@
+# Priority classes and an instantaneous class. The constant p_slip is not
+# declared here: it is set when the model is loaded.
+# The guard acts first: while the alarm is on, only the guard's rule applies.
+# A caught intruder is removed at once by the instantaneous class.
+
+atomic ctrl Intruder = 0;
+atomic ctrl Caught = 0;
+atomic ctrl Inside = 0;
+atomic ctrl Alarm = 0;
+atomic ctrl Quiet = 0;
+atomic ctrl Gone = 0;
+
+react respond_catch = Intruder | Alarm -[ 1. - p_slip ]-> Caught | Quiet;
+react respond_slip  = Intruder | Alarm -[ p_slip ]-> Intruder | Quiet;
+react sneak         = Intruder | Quiet -[ 1. ]-> Inside | Quiet;
+react trip          = Intruder | Quiet -[ 1. ]-> Intruder | Alarm;
+react remove        = Caught -[ 1. ]-> Gone;
+
+big s0 = Intruder | Alarm;
+big inside = Inside;
+big gone = Gone;
+
+begin abrs
+  init s0;
+  rules = [ { respond_catch, respond_slip }, (remove), { sneak, trip } ];
+  actions = [
+    respond = { respond_catch, respond_slip },
+    clean = { remove },
+    enter = { sneak },
+    wait = { trip }
+  ];
+  preds = { inside, gone };
+end

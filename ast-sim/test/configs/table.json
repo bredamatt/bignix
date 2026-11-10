@@ -1,0 +1,10 @@
+{
+  "model": "../models/routes.big",
+  "checks": [
+    { "id": "L1", "failure": "failed", "description": "The run fails" },
+    { "id": "H1", "failure": "dead" },
+    { "id": "SC1", "failure": "failed & dead", "description": "Never both" }
+  ],
+  "max_depth": 5,
+  "solver": { "type": "exact" }
+}

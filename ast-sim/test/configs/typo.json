@@ -1,0 +1,10 @@
+{
+  "model": "../models/routes.big",
+  "checks": [
+    {
+      "id": "F",
+      "failure": "failed"
+    }
+  ],
+  "max_dept": 5
+}

@@ -1,0 +1,6 @@
+(test
+ (name test_ast_sim)
+ (libraries ast_sim alcotest)
+ (deps
+  (glob_files models/*.big)
+  (glob_files configs/*.json)))

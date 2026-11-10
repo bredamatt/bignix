@@ -1,0 +1,9 @@
+# A brs, which ast-sim must reject.
+atomic ctrl A = 0;
+atomic ctrl B = 0;
+react r = A --> B;
+big s0 = A;
+begin brs
+  init s0;
+  rules = [ { r } ];
+end
