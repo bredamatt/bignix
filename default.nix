@@ -14,4 +14,8 @@ rec {
     inherit pkgs bigraph-tools;
     src = ./ast-sim;
   };
+  big2uppaal = import ./nix/big2uppaal.nix {
+    inherit pkgs bigraph-tools;
+    src = ./big2uppaal;
+  };
 }

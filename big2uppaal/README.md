@@ -221,8 +221,9 @@ To build only this package, in the `bignix` folder: `nix-build -A big2uppaal`.
 
 UPPAAL is not free software. It is free of charge for academic use, and
 each user needs a licence key from https://uppaal.org, activated once
-inside the shell with `verifyta --key <your-key>`. On Apple silicon it runs
-under Rosetta. See `nix/uppaal.nix`.
+inside the shell with `verifyta --key <your-key>`. UPPAAL ships x86_64
+binaries only: on Apple silicon it runs under Rosetta, and on aarch64-linux
+the shell leaves it out. See `nix/uppaal.nix`.
 
 ## The source
 
