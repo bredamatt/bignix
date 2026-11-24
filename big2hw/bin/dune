@@ -1,0 +1,5 @@
+(executable
+ (name main)
+ (public_name big2hw)
+ (package big2hw)
+ (libraries big2hw))

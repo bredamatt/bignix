@@ -18,4 +18,9 @@ rec {
     inherit pkgs bigraph-tools;
     src = ./big2uppaal;
   };
+  hardcaml = import ./nix/hardcaml.nix { inherit pkgs; };
+  big2hw = import ./nix/big2hw.nix {
+    inherit pkgs bigraph-tools hardcaml;
+    src = ./big2hw;
+  };
 }

@@ -5,7 +5,8 @@
 #
 # Provides OCaml, dune, the bigraph library and bigrapher CLI (built from
 # the bigraph-tools submodule), the ast-sim stress tester, the big2uppaal
-# generator, alcotest, editor tooling, graphviz, the PRISM model checker,
+# generator, the big2hw circuit generator with Hardcaml, yosys and
+# SymbiYosys, alcotest, editor tooling, graphviz, the PRISM model checker,
 # the mCRL2 toolset and UPPAAL.
 {
   pkgs ? import ./nix/nixpkgs.nix,
@@ -13,7 +14,7 @@
 
 let
   ocamlPackages = pkgs.ocamlPackages;
-  inherit (import ./default.nix { inherit pkgs; }) bigraph-tools ast-sim big2uppaal;
+  inherit (import ./default.nix { inherit pkgs; }) bigraph-tools ast-sim big2uppaal hardcaml big2hw;
   # The model checkers come from nixpkgs 26.05. In 25.05, mCRL2 is marked
   # broken on macOS, and PRISM 4.8.1 is not in the binary cache for Linux
   # and fails to build there (its bundled lp_solve does not compile with
@@ -49,6 +50,9 @@ pkgs.mkShell {
     pkgs.graphviz # SVG output from bigrapher
     pkgs.gnumake
     pkgs.jq # scripts/mcrl2-check.sh converts bigrapher's JSON with it
+    pkgs.yosys # synthesises the Verilog that big2hw writes
+    pkgs.sby # SymbiYosys: proves properties of that Verilog
+    pkgs.yices # the SMT solver SymbiYosys is run with
     # The PRISM model checker (`prism`, `xprism`). Note that nixpkgs'
     # `prism` package is an unrelated program.
     pkgs-26_05.prism-model-checker
@@ -68,6 +72,8 @@ pkgs.mkShell {
     bigraph-tools
     ast-sim
     big2uppaal
+    big2hw
+    hardcaml # so that dune builds big2hw inside the shell
     ocamlPackages.alcotest
   ];
 }

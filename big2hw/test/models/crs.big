@@ -1,0 +1,367 @@
+# One cross-realm solution (CRS), as a multi-perspective bigraph
+#
+# The CRS is the mechanism of RAND RR-A4827-1, chapter 4, that carries one kind of
+# message one way across one realm boundary. This file models the CRS on the channel
+# tics_ir of ../../full/src/sidc.big: responses, ServerRoom [TICS] -> Interface [IR].
+#
+# Multi-perspective modelling is section 6 of Archibald, Calder, Sevegnani,
+# "Practical Modelling with Bigraphs". Each perspective is one parallel region:
+#
+#   Physical       where the two FPGAs are, and the fibres between them
+#   Logical        the layout of each FPGA: its blocks, and what each block holds
+#   Computational  the two state machines, written out: states, transitions, and a
+#                  token on the current state
+#
+# Links join the perspectives:
+#
+#   Physical -- Logical        a board and its layout; a laser or detector and the
+#                              pin wired to it; the tamper sensor and the hazard pin
+#   Logical  -- Computational  a block and the state register of its machine; the
+#                              gate's enable wire and the state that drives it
+#
+# No link joins Physical and Computational: a state machine touches the world only
+# through the layout that implements it.
+#
+# From the report: the three parts TX, RX and CC; a sending realm and a receiving
+# realm that do not trust each other; a one-way data path; and the pattern
+# "authenticate the end point, enable a one-way data path for an authorized
+# transfer, and close or block the path when the transaction completes or when any
+# hazard is detected". The report does not publish the protocol or the circuit, so
+# the fibres, the blocks, the states and the steps below are (assumed).
+
+# ================================ PERSPECTIVES ===============================
+ctrl Physical = 0;
+ctrl Logical = 0;
+ctrl Computational = 0;
+
+# ================================== PHYSICAL =================================
+ctrl ServerRoom = 0;          # [TICS] the sending realm
+ctrl Interface = 0;           # [IR]   the receiving realm
+ctrl FPGA = 1;                # one FPGA board and its optical modules. port: its layout
+atomic ctrl Laser = 2;        # sends light. On two links: a pin of its board, and a fibre
+ctrl Detector = 2;            # receives light. On two links: a fibre, and a pin of its board.
+                              # Holds what has arrived and has not been read yet.
+ctrl Sensor = 1;              # tamper sensor on the receiving side. port: the hazard line
+atomic ctrl Alarm = 0;        # the sensor has tripped. It stays tripped.
+
+# A fibre is a link with a Laser at one end and a Detector at the other. That is the
+# diode: light goes from the laser to the detector, and there is nothing at the
+# detector's end that can send.
+# Two fibres, both ServerRoom -> Interface (assumed):
+#   control  carries one pulse: "a transfer is coming"
+#   data     carries the authentication tag, then the payload
+
+ctrl Light = 0;               # light that has reached a detector. Holds what it carries.
+
+# What light can carry.
+atomic ctrl Pulse = 0;        # on the control fibre
+atomic ctrl Tag = 0;          # authentication tag made with the sender's credential
+atomic ctrl BadTag = 0;       # a tag that does not verify: damaged or forged
+atomic ctrl Response = 0;     # the one payload this CRS is built to carry
+atomic ctrl Weights = 0;      # a payload that must never leave the ServerRoom
+
+# =================================== LOGICAL =================================
+ctrl Layout = 1;              # what is configured on one FPGA. port: its board
+ctrl Tx = 1;                  # transmit logic. port: the state register of its machine
+ctrl CC = 1;                  # channel control. port: the state register of its machine
+ctrl Gate = 0;                # the data path
+ctrl Rx = 0;                  # receive logic
+ctrl Buf = 0;                 # buffer for one payload
+atomic ctrl Cred = 0;         # the sender's credential
+
+# The pins of a block. BigraphER does not order the ports of a node, so a block
+# with two fibres on two ports could not tell them apart. Each block holds one
+# named pin for each thing it is wired to instead (section 7.1 of the paper).
+atomic ctrl CtlOut = 1;       # drives the control laser
+atomic ctrl DatOut = 1;       # drives the data laser
+atomic ctrl In = 1;           # channel control reads a detector. The machine decides
+                              # what to do with what arrives, whichever fibre it is on.
+atomic ctrl HazIn = 1;        # channel control reads the hazard line
+atomic ctrl DatIn = 1;        # the gate's input from the data detector
+atomic ctrl Enable = 1;       # the gate's enable wire. The gate passes data while the
+                              # state that drives this wire is the current state.
+atomic ctrl NetOut = 1;       # net inside the FPGA, from the gate
+atomic ctrl NetIn = 1;        # net inside the FPGA, to the receive logic
+
+# ================================ COMPUTATIONAL ==============================
+# Each machine is written out in full: its states, its transitions, and a token
+# on the current state. The rules below do not name any state except Blocked;
+# they move the token along whatever transitions are here.
+ctrl Machine = 0;             # one state machine
+ctrl State = 1;               # one state. port: its own link, shared with the
+                              # transitions that lead to it, and with the token
+                              # while it is the current state.
+                              # Holds its name, its outputs, and the transitions out of it.
+ctrl Trans = 0;               # one transition out of the state that holds it.
+                              # Holds its label and where it leads.
+atomic ctrl To = 1;           # port: the state a transition leads to
+atomic ctrl Now = 2;          # the token: the state register. On two links: the
+                              # current state, and the block the machine belongs to.
+atomic ctrl Drive = 1;        # output of a state. port: the wire it drives.
+
+# Names of the transmit machine's states.
+atomic ctrl TxIdle = 0;       # nothing to send
+atomic ctrl TxLoaded = 0;     # a payload is in the buffer
+atomic ctrl TxRequested = 0;  # pulse sent
+atomic ctrl TxTagged = 0;     # tag sent
+# Labels of its transitions: what it does on taking one.
+atomic ctrl Load = 0;
+atomic ctrl SendPulse = 0;
+atomic ctrl SendTag = 0;
+atomic ctrl SendPayload = 0;
+
+# Names of the channel-control machine's states.
+atomic ctrl Idle = 0;         # path closed
+atomic ctrl Armed = 0;        # pulse seen, waiting for a tag
+atomic ctrl Open = 0;         # tag verified, path enabled for one response
+atomic ctrl Blocked = 0;      # failed secure: path closed, and nothing reopens it
+# Labels of its transitions: what must arrive to take one. These are the controls
+# Pulse, Tag and Response from the Physical perspective.
+
+# ================================ INITIAL STATE ==============================
+big physical =
+  Physical.( ServerRoom.FPGA{b_tx}.(Laser{ctl_o, ctl_f} | Laser{dat_o, dat_f})
+           | Interface.( FPGA{b_rx}.(Detector{ctl_f, ctl_i}.1 | Detector{dat_f, dat_i}.1)
+                       | Sensor{hz}.1 ) );
+
+big logical =
+  Logical.( Layout{b_tx}.Tx{r_tx}.(CtlOut{ctl_o} | DatOut{dat_o} | Buf.1 | Cred)
+          | /net Layout{b_rx}.( CC{r_cc}.(In{ctl_i} | In{dat_i} | HazIn{hz})
+                              | Gate.(DatIn{dat_i} | Enable{en} | NetOut{net})
+                              | Rx.(NetIn{net} | Buf.1) ) );
+
+#   TxIdle --Load--> TxLoaded --SendPulse--> TxRequested --SendTag--> TxTagged
+#      ^                                                                  |
+#      +---------------------------- SendPayload -------------------------+
+big tx_machine =
+  /t0 /t1 /t2 /t3
+  Machine.( State{t0}.(TxIdle      | Trans.(Load        | To{t1}))
+          | State{t1}.(TxLoaded    | Trans.(SendPulse   | To{t2}))
+          | State{t2}.(TxRequested | Trans.(SendTag     | To{t3}))
+          | State{t3}.(TxTagged    | Trans.(SendPayload | To{t0}))
+          | Now{t0, r_tx} );
+
+#   Idle --Pulse--> Armed --Tag--> Open --Response--> Idle        Blocked
+#
+# Open drives the gate's enable wire. Blocked has no transition in and none out:
+# the rules send the machine there when something arrives that the current state
+# has no transition for, or when the hazard line is up.
+big cc_machine =
+  /c0 /c1 /c2 /c3
+  Machine.( State{c0}.(Idle  | Trans.(Pulse | To{c1}))
+          | State{c1}.(Armed | Trans.(Tag | To{c2}))
+          | State{c2}.(Open  | Drive{en} | Trans.(Response | To{c0}))
+          | State{c3}.Blocked
+          | Now{c0, r_cc} );
+
+big computational = Computational.(tx_machine | cc_machine);
+
+big crs =
+  /b_tx /b_rx /ctl_o /dat_o /ctl_f /dat_f /ctl_i /dat_i /hz /r_tx /r_cc /en
+  (physical || logical || computational);
+
+# ==================================== RULES ==================================
+# A rule names the parts it needs from each perspective, and the links between
+# them say which laser, which block and which machine belong together.
+#
+# In every rule, Now{s, r} || State{s}.(Trans.(L | To{t}) | id) reads: the current
+# state has a transition labelled L, to the state on link t. The rule takes it by
+# putting the token on t.
+#
+# Every rule has weight 1.0. The weights say nothing about the system: PRISM
+# reads only transition files that carry them. The properties in ../props ask
+# what can and what must happen, and their answers do not depend on the weights.
+
+# --- The sending realm's software (untrusted) ---
+# RAND RR-A4827-1, chapter 3: software inside a realm is untrusted. It can hand the
+# transmit logic a response, or the weights.
+react load_response =
+  Tx{r}.(Buf.1 | id) || Now{s, r} || State{s}.(Trans.(Load | To{t}) | id)
+  -[1.0]->Tx{r}.(Buf.Response | id) || Now{t, r} || State{s}.(Trans.(Load | To{t}) | id);
+react load_weights =
+  Tx{r}.(Buf.1 | id) || Now{s, r} || State{s}.(Trans.(Load | To{t}) | id)
+  -[1.0]->Tx{r}.(Buf.Weights | id) || Now{t, r} || State{s}.(Trans.(Load | To{t}) | id);
+
+# --- The transmit machine ---
+# Nothing comes back over a diode, so the transmit machine never learns what the
+# channel control did. It sends pulse, tag, payload, each once the detector is free.
+react tx_request =
+  Laser{o, f} || Detector{f, i}.1 || Tx{r}.(CtlOut{o} | id)
+    || Now{s, r} || State{s}.(Trans.(SendPulse | To{t}) | id)
+  -[1.0]->Laser{o, f} || Detector{f, i}.Light.Pulse || Tx{r}.(CtlOut{o} | id)
+    || Now{t, r} || State{s}.(Trans.(SendPulse | To{t}) | id);
+react tx_tag =
+  Laser{o, f} || Detector{f, i}.1 || Tx{r}.(DatOut{o} | Cred | id)
+    || Now{s, r} || State{s}.(Trans.(SendTag | To{t}) | id)
+  -[1.0]->Laser{o, f} || Detector{f, i}.Light.Tag || Tx{r}.(DatOut{o} | Cred | id)
+    || Now{t, r} || State{s}.(Trans.(SendTag | To{t}) | id);
+# The same step with the tag damaged on the way, or replaced.
+react tx_tag_damaged =
+  Laser{o, f} || Detector{f, i}.1 || Tx{r}.(DatOut{o} | Cred | id)
+    || Now{s, r} || State{s}.(Trans.(SendTag | To{t}) | id)
+  -[1.0]->Laser{o, f} || Detector{f, i}.Light.BadTag || Tx{r}.(DatOut{o} | Cred | id)
+    || Now{t, r} || State{s}.(Trans.(SendTag | To{t}) | id);
+# The payload leaves the buffer for the fibre. The first site is the payload.
+react tx_send =
+  Laser{o, f} || Detector{f, i}.1 || Tx{r}.(DatOut{o} | Buf | id)
+    || Now{s, r} || State{s}.(Trans.(SendPayload | To{t}) | id)
+  -[1.0]->Laser{o, f} || Detector{f, i}.Light || Tx{r}.(DatOut{o} | Buf.1 | id)
+    || Now{t, r} || State{s}.(Trans.(SendPayload | To{t}) | id);
+
+# --- The channel-control machine: something arrives that the current state has a
+# --- transition for ---
+# A pulse.
+react step_pulse =
+  Detector{f, i}.Light.Pulse || CC{r}.(In{i} | id)
+    || Now{s, r} || State{s}.(Trans.(Pulse | To{t}) | id)
+  -[1.0]->Detector{f, i}.1 || CC{r}.(In{i} | id)
+    || Now{t, r} || State{s}.(Trans.(Pulse | To{t}) | id);
+# A tag that verifies.
+react step_tag =
+  Detector{f, i}.Light.Tag || CC{r}.(In{i} | id)
+    || Now{s, r} || State{s}.(Trans.(Tag | To{t}) | id)
+  -[1.0]->Detector{f, i}.1 || CC{r}.(In{i} | id)
+    || Now{t, r} || State{s}.(Trans.(Tag | To{t}) | id);
+# A response, while the current state drives the gate's enable wire: the response
+# passes the gate into the receive buffer.
+react carry =
+  Detector{f, i}.Light.Response || Gate.(DatIn{i} | Enable{e} | NetOut{n})
+    || Rx.(NetIn{n} | Buf.1)
+    || Now{s, r} || State{s}.(Drive{e} | Trans.(Response | To{t}) | id)
+  -[1.0]->Detector{f, i}.1 || Gate.(DatIn{i} | Enable{e} | NetOut{n})
+    || Rx.(NetIn{n} | Buf.Response)
+    || Now{t, r} || State{s}.(Drive{e} | Trans.(Response | To{t}) | id);
+
+# --- The channel-control machine: everything else fails secure ---
+# Something arrives that the current state has no transition for. It is discarded
+# and the token goes to Blocked. "No transition for it" is the condition: the
+# label is nowhere in the current state. (It is not in the other two sites
+# either, which are the rest of CC and the rest of Blocked.)
+react block_pulse =
+  Detector{f, i}.Light.Pulse || CC{r}.(In{i} | id)
+    || Now{s, r} || State{s} || State{b}.(Blocked | id)
+  -[1.0]->Detector{f, i}.1 || CC{r}.(In{i} | id)
+    || Now{b, r} || State{s} || State{b}.(Blocked | id)
+  if !Pulse in param;
+react block_tag =
+  Detector{f, i}.Light.Tag || CC{r}.(In{i} | id)
+    || Now{s, r} || State{s} || State{b}.(Blocked | id)
+  -[1.0]->Detector{f, i}.1 || CC{r}.(In{i} | id)
+    || Now{b, r} || State{s} || State{b}.(Blocked | id)
+  if !Tag in param;
+react block_response =
+  Detector{f, i}.Light.Response || CC{r}.(In{i} | id)
+    || Now{s, r} || State{s} || State{b}.(Blocked | id)
+  -[1.0]->Detector{f, i}.1 || CC{r}.(In{i} | id)
+    || Now{b, r} || State{s} || State{b}.(Blocked | id)
+  if !Response in param;
+# A tag that does not verify. No state has a transition for it.
+react block_bad_tag =
+  Detector{f, i}.Light.BadTag || CC{r}.(In{i} | id)
+    || Now{s, r} || State{s} || State{b}.(Blocked | id)
+  -[1.0]->Detector{f, i}.1 || CC{r}.(In{i} | id)
+    || Now{b, r} || State{s} || State{b}.(Blocked | id)
+  if !BadTag in param;
+# The weights. No state has a transition for them. Telling the weights from a
+# response is taken to be a format check the receiving FPGA can make (assumed).
+react block_weights =
+  Detector{f, i}.Light.Weights || CC{r}.(In{i} | id)
+    || Now{s, r} || State{s} || State{b}.(Blocked | id)
+  -[1.0]->Detector{f, i}.1 || CC{r}.(In{i} | id)
+    || Now{b, r} || State{s} || State{b}.(Blocked | id)
+  if !Weights in param;
+# Already Blocked: whatever arrives is discarded. The first site is what arrived.
+react drop =
+  Detector{f, i}.Light || CC{r}.(In{i} | id) || Now{s, r} || State{s}.(Blocked | id)
+  -[1.0]->Detector{f, i}.1 || CC{r}.(In{i} | id) || Now{s, r} || State{s}.(Blocked | id)
+  @ [1, 2];
+
+# --- Hazard ---
+# Someone tampers with the receiving side. Can happen at any time.
+react tamper = Sensor{h}.1 -[1.0]-> Sensor{h}.Alarm;
+# The hazard line sends the channel control to Blocked from any other state.
+react block_hazard =
+  Sensor{h}.Alarm || CC{r}.(HazIn{h} | id)
+    || Now{s, r} || State{s} || State{b}.(Blocked | id)
+  -[1.0]->Sensor{h}.Alarm || CC{r}.(HazIn{h} | id)
+    || Now{b, r} || State{s} || State{b}.(Blocked | id);
+
+# --- The receiving realm ---
+# Takes the response out of the receive buffer.
+react rx_take = Rx.(Buf.Response | id) -[1.0]-> Rx.(Buf.1 | id);
+
+# ================================= PREDICATES ================================
+# PRISM sees states and these predicates, not which rule fired. The properties
+# are in ../props/crs.props.
+#
+# First, states that must never be reached. Each is named for what would be wrong.
+
+# Physical. A fibre that can carry light from the Interface back to the ServerRoom.
+big bad_reverse_fibre =
+  ServerRoom.(FPGA{a}.(Detector{f, i} | id) | id) || Interface.(FPGA{b}.(Laser{o, f} | id) | id);
+
+# Physical and Logical. The weights are past the gate, in the receive buffer of the
+# FPGA that stands in the Interface.
+big bad_weights_out =
+  Interface.(FPGA{b} | id) || Layout{b}.(Rx.(Buf.Weights | id) | id);
+
+# Logical and Computational. The gate's enable wire is driven by a state other
+# than Open.
+big bad_enable_idle    = Enable{e} || State{s}.(Drive{e} | Idle | id);
+big bad_enable_armed   = Enable{e} || State{s}.(Drive{e} | Armed | id);
+big bad_enable_blocked = Enable{e} || State{s}.(Drive{e} | Blocked | id);
+
+# Logical and Computational. One block's state register holds two states at once.
+big bad_two_states = Now{s, r} || Now{t, r};
+
+# Computational. A transition leads out of Blocked, or into it. The machine gets
+# to Blocked only by the block rules, and never leaves.
+big bad_blocked_exit  = State{s}.(Blocked | Trans | id);
+big bad_blocked_entry = To{s} || State{s}.(Blocked | id);
+
+# Second, facts about a state that are neither good nor bad. The properties about
+# the order of steps are written over these: what holds now, and what holds one
+# step later.
+
+# Computational. The channel control is in Idle, in Open, or in Blocked.
+big cc_idle    = CC{r} || Now{s, r} || State{s}.(Idle | id);
+big cc_open    = CC{r} || Now{s, r} || State{s}.(Open | id);
+big cc_blocked = CC{r} || Now{s, r} || State{s}.(Blocked | id);
+
+# Logical. The receive buffer is empty, or holds a response. It goes from empty
+# to full when a response is carried.
+big rx_empty = Rx.(Buf.1 | id);
+big rx_full  = Rx.(Buf.Response | id);
+
+# Physical. Something has reached a detector and has not been read yet.
+big pulse_waiting    = Detector{f, i}.Light.Pulse;
+big tag_waiting      = Detector{f, i}.Light.Tag;
+big bad_tag_waiting  = Detector{f, i}.Light.BadTag;
+big response_waiting = Detector{f, i}.Light.Response;
+
+# Physical. The tamper sensor has tripped.
+big alarm = Sensor{h}.Alarm;
+
+# Logical. The weights are in the transmit buffer. This stops holding once they
+# are sent.
+big weights_loaded = Tx{r}.(Buf.Weights | id);
+
+# =============================== REACTIVE SYSTEM =============================
+# The hazard line acts first: while the alarm is up and the channel control is not
+# yet Blocked, nothing else happens. Every other step is in one class, so every
+# other order of events is explored.
+begin pbrs
+  init crs;
+  rules = [ { block_hazard },
+            { load_response, load_weights,
+              tx_request, tx_tag, tx_tag_damaged, tx_send,
+              step_pulse, step_tag, carry,
+              block_pulse, block_tag, block_response, block_bad_tag, block_weights, drop,
+              tamper, rx_take } ];
+  preds = { bad_reverse_fibre, bad_weights_out,
+            bad_enable_idle, bad_enable_armed, bad_enable_blocked,
+            bad_two_states, bad_blocked_exit, bad_blocked_entry,
+            cc_idle, cc_open, cc_blocked, rx_empty, rx_full,
+            pulse_waiting, tag_waiting, bad_tag_waiting, response_waiting,
+            alarm, weights_loaded };
+end
