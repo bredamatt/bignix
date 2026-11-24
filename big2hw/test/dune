@@ -1,0 +1,6 @@
+(tests
+ (names test_design test_hw test_conform)
+ (libraries big2hw hardcaml alcotest)
+ (deps
+  (glob_files models/*.big)
+  (glob_files ../examples/*.big)))

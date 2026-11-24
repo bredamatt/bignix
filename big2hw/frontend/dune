@@ -1,0 +1,28 @@
+; The .big parser and evaluator, compiled from bigrapher's sources. bigrapher
+; only builds them into its executable, so they are copied here and built as
+; a library. BIGRAPHER_SRC is the bigrapher folder of bigraph-tools; it is
+; set by nix/ast-sim.nix and by the nix-shell.
+
+(copy_files
+ %{env:BIGRAPHER_SRC=/BIGRAPHER_SRC-is-not-set}/src/{ast,loc,unify,comments,store}.ml)
+
+(copy_files %{env:BIGRAPHER_SRC=/BIGRAPHER_SRC-is-not-set}/src/lexer.mll)
+
+(copy_files %{env:BIGRAPHER_SRC=/BIGRAPHER_SRC-is-not-set}/src/parser.mly)
+
+(copy_files %{env:BIGRAPHER_SRC=/BIGRAPHER_SRC-is-not-set}/utils/utils.ml)
+
+(ocamllex
+ (modules lexer))
+
+(menhir
+ (flags --explain --strict --no-dollars)
+ (modules parser))
+
+; Warnings are off: this is upstream code, built as it is.
+
+(library
+ (name big_frontend)
+ (libraries bigraph unix)
+ (flags
+  (:standard -w -a)))

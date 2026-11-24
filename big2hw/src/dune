@@ -1,0 +1,3 @@
+(library
+ (name big2hw)
+ (libraries bigraph big_frontend hardcaml))

@@ -1,0 +1,175 @@
+# The smallest model big2hw builds: a pulse opens a gate for one message.
+#
+# Two FPGA boards and two one-way fibres. The sending board puts a pulse on
+# the control fibre, then a message on the data fibre. The receiving board
+# opens its gate when it sees the pulse, lets one message through into a
+# buffer, and closes the gate again.
+#
+# README.md in this folder walks through it, part by part.
+
+# ============================== THE BOARDS ===================================
+ctrl Sender = 0;              # the realm the sending board stands in
+ctrl Receiver = 0;            # the realm the receiving board stands in
+ctrl FPGA = 1;                # a board. port: its layout
+atomic ctrl Laser = 2;        # sends light. On two links: a pin of its board, and a fibre
+ctrl Detector = 2;            # receives light. On two links: a fibre, and a pin of its board
+ctrl Light = 0;               # light that has reached a detector. Holds what it carries.
+atomic ctrl Pulse = 0;        # carried on the control fibre
+atomic ctrl Msg = 0;          # carried on the data fibre
+
+# ============================ WHAT IS ON A BOARD =============================
+ctrl Layout = 1;              # what is configured on one board. port: its board
+ctrl Tx = 1;                  # transmit logic. port: the state register of its machine
+ctrl CC = 1;                  # channel control. port: the state register of its machine
+ctrl Gate = 0;                # lets data through while its enable wire is high
+ctrl Rx = 0;                  # receive logic
+ctrl Buf = 0;                 # holds one message, or nothing
+atomic ctrl CtlOut = 1;       # pin of Tx: drives the control laser
+atomic ctrl DatOut = 1;       # pin of Tx: drives the data laser
+atomic ctrl In = 1;           # pin of CC: reads a detector
+atomic ctrl DatIn = 1;        # pin of the gate: the data detector
+atomic ctrl Enable = 1;       # pin of the gate: its enable wire
+atomic ctrl NetOut = 1;       # pin of the gate: what it lets through
+atomic ctrl NetIn = 1;        # pin of Rx: from the gate
+
+# ============================= STATE MACHINES ================================
+ctrl Machine = 0;
+ctrl State = 1;               # one state. port: its own link
+ctrl Trans = 0;               # one transition out of the state that holds it
+atomic ctrl To = 1;           # port: the state the transition leads to
+atomic ctrl Now = 2;          # the token. On two links: the current state, and its block
+atomic ctrl Drive = 1;        # a state drives a wire. port: the wire
+
+# The transmit machine: its states, and what it does on each transition.
+atomic ctrl TxIdle = 0;
+atomic ctrl TxLoaded = 0;
+atomic ctrl TxRequested = 0;
+atomic ctrl Load = 0;
+atomic ctrl SendPulse = 0;
+atomic ctrl SendPayload = 0;
+
+# The channel control: its states. Its transitions are labelled with what
+# must arrive: Pulse and Msg, above.
+atomic ctrl Closed = 0;
+atomic ctrl Open = 0;
+atomic ctrl Blocked = 0;
+
+# ============================== FIRST STATE ==================================
+# Two lasers on the sending board, two detectors on the receiving board. A
+# fibre is a link with a laser at one end and a detector at the other.
+big boards =
+  Sender.FPGA{b_tx}.(Laser{ctl_o, ctl_f} | Laser{dat_o, dat_f})
+  | Receiver.FPGA{b_rx}.(Detector{ctl_f, ctl_i}.1 | Detector{dat_f, dat_i}.1);
+
+# What is on each board, and which pin is wired to which laser or detector.
+big layouts =
+  Layout{b_tx}.Tx{r_tx}.(CtlOut{ctl_o} | DatOut{dat_o} | Buf.1)
+  | /net Layout{b_rx}.( CC{r_cc}.(In{ctl_i} | In{dat_i})
+                      | Gate.(DatIn{dat_i} | Enable{en} | NetOut{net})
+                      | Rx.(NetIn{net} | Buf.1) );
+
+#   TxIdle --Load--> TxLoaded --SendPulse--> TxRequested --SendPayload--> TxIdle
+big tx_machine =
+  /t0 /t1 /t2
+  Machine.( State{t0}.(TxIdle      | Trans.(Load        | To{t1}))
+          | State{t1}.(TxLoaded    | Trans.(SendPulse   | To{t2}))
+          | State{t2}.(TxRequested | Trans.(SendPayload | To{t0}))
+          | Now{t0, r_tx} );
+
+#   Closed --Pulse--> Open --Msg--> Closed        Blocked
+#
+# Open drives the gate's enable wire.
+big cc_machine =
+  /c0 /c1 /c2
+  Machine.( State{c0}.(Closed | Trans.(Pulse | To{c1}))
+          | State{c1}.(Open | Drive{en} | Trans.(Msg | To{c0}))
+          | State{c2}.Blocked
+          | Now{c0, r_cc} );
+
+big system =
+  /b_tx /b_rx /ctl_o /dat_o /ctl_f /dat_f /ctl_i /dat_i /r_tx /r_cc /en
+  (boards || layouts || (tx_machine | cc_machine));
+
+# ================================= RULES =====================================
+# In every rule, Now{s, r} || State{s}.(Trans.(L | To{t}) | id) reads: the
+# current state of the machine of block r has a transition labelled L, to
+# the state on link t. The rule takes it by moving the token to t.
+#
+# The weights 1.0 mean nothing. BigraphER writes transition files for PRISM
+# only for systems that have them.
+
+# The sending realm's software hands over a message.
+react load =
+  Tx{r}.(Buf.1 | id) || Now{s, r} || State{s}.(Trans.(Load | To{t}) | id)
+  -[1.0]->
+  Tx{r}.(Buf.Msg | id) || Now{t, r} || State{s}.(Trans.(Load | To{t}) | id);
+
+# The transmit logic puts a pulse on the control fibre, if its detector is free.
+react tx_pulse =
+  Laser{o, f} || Detector{f, i}.1 || Tx{r}.(CtlOut{o} | id)
+    || Now{s, r} || State{s}.(Trans.(SendPulse | To{t}) | id)
+  -[1.0]->
+  Laser{o, f} || Detector{f, i}.Light.Pulse || Tx{r}.(CtlOut{o} | id)
+    || Now{t, r} || State{s}.(Trans.(SendPulse | To{t}) | id);
+
+# It moves what is in its buffer onto the data fibre. The first site is that.
+react tx_send =
+  Laser{o, f} || Detector{f, i}.1 || Tx{r}.(DatOut{o} | Buf | id)
+    || Now{s, r} || State{s}.(Trans.(SendPayload | To{t}) | id)
+  -[1.0]->
+  Laser{o, f} || Detector{f, i}.Light || Tx{r}.(DatOut{o} | Buf.1 | id)
+    || Now{t, r} || State{s}.(Trans.(SendPayload | To{t}) | id);
+
+# A pulse arrives, and the current state has a transition for it.
+react step_pulse =
+  Detector{f, i}.Light.Pulse || CC{r}.(In{i} | id)
+    || Now{s, r} || State{s}.(Trans.(Pulse | To{t}) | id)
+  -[1.0]->
+  Detector{f, i}.1 || CC{r}.(In{i} | id)
+    || Now{t, r} || State{s}.(Trans.(Pulse | To{t}) | id);
+
+# A message arrives at the gate while the current state drives the enable
+# wire, and the receive buffer is empty: it passes into the buffer.
+react carry =
+  Detector{f, i}.Light.Msg || Gate.(DatIn{i} | Enable{e} | NetOut{n})
+    || Rx.(NetIn{n} | Buf.1)
+    || Now{s, r} || State{s}.(Drive{e} | Trans.(Msg | To{t}) | id)
+  -[1.0]->
+  Detector{f, i}.1 || Gate.(DatIn{i} | Enable{e} | NetOut{n})
+    || Rx.(NetIn{n} | Buf.Msg)
+    || Now{t, r} || State{s}.(Drive{e} | Trans.(Msg | To{t}) | id);
+
+# A pulse arrives, and the current state has no transition for it: the pulse
+# is discarded and the token goes to Blocked. The condition says that Pulse
+# is nowhere in the three sites, the first of which is the current state.
+react block_pulse =
+  Detector{f, i}.Light.Pulse || CC{r}.(In{i} | id)
+    || Now{s, r} || State{s} || State{b}.(Blocked | id)
+  -[1.0]->
+  Detector{f, i}.1 || CC{r}.(In{i} | id)
+    || Now{b, r} || State{s} || State{b}.(Blocked | id)
+  if !Pulse in param;
+
+# Blocked: whatever arrives is discarded. The first site is what arrived.
+react drop =
+  Detector{f, i}.Light || CC{r}.(In{i} | id) || Now{s, r} || State{s}.(Blocked | id)
+  -[1.0]->
+  Detector{f, i}.1 || CC{r}.(In{i} | id) || Now{s, r} || State{s}.(Blocked | id)
+  @ [1, 2];
+
+# The receiving realm takes the message out of the receive buffer.
+react rx_take = Rx.(Buf.Msg | id) -[1.0]-> Rx.(Buf.1 | id);
+
+# ============================== PREDICATES ===================================
+big open = CC{r} || Now{s, r} || State{s}.(Open | id);
+big blocked = CC{r} || Now{s, r} || State{s}.(Blocked | id);
+big delivered = Rx.(Buf.Msg | id);
+# Must never hold: the enable wire is driven by a state other than Open.
+big bad_enable_closed = Enable{e} || State{s}.(Drive{e} | Closed | id);
+big bad_enable_blocked = Enable{e} || State{s}.(Drive{e} | Blocked | id);
+
+begin pbrs
+  init system;
+  rules = [ { load, tx_pulse, tx_send, step_pulse, carry, block_pulse, drop, rx_take } ];
+  preds = { open, blocked, delivered, bad_enable_closed, bad_enable_blocked };
+end

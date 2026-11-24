@@ -1,0 +1,8 @@
+(lang dune 3.0)
+
+(using menhir 2.1)
+
+(package
+ (name big2hw)
+ (synopsis
+  "Hardcaml circuits and Verilog, generated from a bigraph of two FPGAs and their state machines"))

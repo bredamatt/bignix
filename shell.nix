@@ -4,15 +4,18 @@
 #   make test        # inside the shell
 #
 # Provides OCaml, dune, the bigraph library and bigrapher CLI (built from
-# the bigraph-tools submodule), the ast-sim stress tester, alcotest, editor
-# tooling, graphviz, the PRISM model checker and the mCRL2 toolset.
+# the bigraph-tools submodule), the ast-sim stress tester, the big2uppaal
+# generator, the big2hw circuit generator with Hardcaml, yosys and SymbiYosys,
+# alcotest,
+# editor tooling, graphviz, the PRISM model checker, the mCRL2 toolset and
+# UPPAAL.
 {
   pkgs ? import ./nix/nixpkgs.nix,
 }:
 
 let
   ocamlPackages = pkgs.ocamlPackages;
-  inherit (import ./default.nix { inherit pkgs; }) bigraph-tools ast-sim;
+  inherit (import ./default.nix { inherit pkgs; }) bigraph-tools ast-sim big2uppaal hardcaml big2hw;
   # The model checkers come from nixpkgs 26.05. In 25.05, mCRL2 is marked
   # broken on macOS, and PRISM 4.8.1 is not in the binary cache for Linux
   # and fails to build there (its bundled lp_solve does not compile with
@@ -23,6 +26,15 @@ let
     sha256 = "0am8xx09fx5yf2p0wb001v0jx1g5hrfb76h4r37xph378jgk7pcr";
   }) { };
   mcrl2 = pkgs-26_05.mcrl2;
+  # UPPAAL (`verifyta`): statistical model checking of the stochastic hybrid
+  # automata that big2uppaal generates. It is proprietary and needs a licence
+  # key: see nix/uppaal.nix.
+  uppaal = import ./nix/uppaal.nix {
+    inherit pkgs;
+    pkgs-26_05-unfree = import pkgs-26_05.path {
+      config.allowUnfreePredicate = pkg: pkgs.lib.getName pkg == "uppaal";
+    };
+  };
   # On macOS the package only puts the IDE on PATH; the command-line tools
   # (mcrl22lps, ltsconvert, lts2pbes, pbessolve, ...) stay inside the app.
   mcrl2Tools =
@@ -42,12 +54,16 @@ pkgs.mkShell {
     pkgs.graphviz # SVG output from bigrapher
     pkgs.gnumake
     pkgs.jq # scripts/mcrl2-check.sh converts bigrapher's JSON with it
+    pkgs.yosys # synthesises the Verilog that big2hw writes
+    pkgs.sby # SymbiYosys: proves properties of that Verilog
+    pkgs.yices # the SMT solver SymbiYosys is run with
     # The PRISM model checker (`prism`, `xprism`). Note that nixpkgs'
     # `prism` package is an unrelated program.
     pkgs-26_05.prism-model-checker
     # The mCRL2 toolset: modal mu-calculus checks over labelled transition
     # systems, so properties can name the rules (actions) that fired.
     mcrl2
+    uppaal
   ];
 
   shellHook = ''
@@ -60,6 +76,9 @@ pkgs.mkShell {
   buildInputs = [
     bigraph-tools
     ast-sim
+    big2uppaal
+    big2hw
+    hardcaml # so that dune builds big2hw inside the shell
     ocamlPackages.alcotest
   ];
 }
