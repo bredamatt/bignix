@@ -1,0 +1,3 @@
+(library
+ (name big2uppaal)
+ (libraries bigraph big_frontend))

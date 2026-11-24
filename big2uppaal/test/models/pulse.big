@@ -1,0 +1,26 @@
+# A small system with reaction rules for the tests: a compute burst makes a
+# power pulse, and the meter sees the pulse with probability p.
+
+float p = 0.25;
+
+ctrl Site = 0;
+ctrl GPU = 0;
+ctrl Meter = 0;
+atomic ctrl Work = 0;
+atomic ctrl Tok = 0;
+
+big one = Site.(GPU.Work | Meter.1);
+big two = Site.(GPU.(Work | Work) | Meter.1);
+
+react burst = GPU.(Work | id) -[1.0]-> GPU.(Tok | id);
+react pass = GPU.(Tok | id) | Meter.id -[p]-> GPU.id | Meter.(Tok | id);
+react damp = GPU.(Tok | id) -[1.0 - p]-> GPU.id;
+
+big seen1 = Meter.(Tok | id);
+big seen2 = Meter.(Tok | Tok | id);
+
+begin pbrs
+  init one;
+  rules = [ {burst, pass, damp} ];
+  preds = { seen1, seen2 };
+end

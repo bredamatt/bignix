@@ -5,10 +5,9 @@
 #
 # Provides OCaml, dune, the bigraph library and bigrapher CLI (built from
 # the bigraph-tools submodule), the ast-sim stress tester, the big2uppaal
-# generator, the big2hw circuit generator with Hardcaml, yosys and SymbiYosys,
-# alcotest,
-# editor tooling, graphviz, the PRISM model checker, the mCRL2 toolset and
-# UPPAAL.
+# generator, the big2hw circuit generator with Hardcaml, yosys and
+# SymbiYosys, alcotest, editor tooling, graphviz, the PRISM model checker,
+# the mCRL2 toolset and UPPAAL.
 {
   pkgs ? import ./nix/nixpkgs.nix,
 }:
@@ -26,15 +25,12 @@ let
     sha256 = "0am8xx09fx5yf2p0wb001v0jx1g5hrfb76h4r37xph378jgk7pcr";
   }) { };
   mcrl2 = pkgs-26_05.mcrl2;
-  # UPPAAL (`verifyta`): statistical model checking of the stochastic hybrid
-  # automata that big2uppaal generates. It is proprietary and needs a licence
-  # key: see nix/uppaal.nix.
-  uppaal = import ./nix/uppaal.nix {
-    inherit pkgs;
-    pkgs-26_05-unfree = import pkgs-26_05.path {
-      config.allowUnfreePredicate = pkg: pkgs.lib.getName pkg == "uppaal";
-    };
-  };
+  # UPPAAL (`verifyta`): statistical model checking of the models that
+  # big2uppaal writes. It is proprietary and needs a licence key, and the
+  # vendor ships x86_64 binaries only, so it is left out on aarch64-linux:
+  # see nix/uppaal.nix.
+  uppaal = pkgs.lib.optional (pkgs.stdenv.isDarwin || pkgs.stdenv.isx86_64)
+    (import ./nix/uppaal.nix { inherit pkgs; });
   # On macOS the package only puts the IDE on PATH; the command-line tools
   # (mcrl22lps, ltsconvert, lts2pbes, pbessolve, ...) stay inside the app.
   mcrl2Tools =
@@ -63,8 +59,7 @@ pkgs.mkShell {
     # The mCRL2 toolset: modal mu-calculus checks over labelled transition
     # systems, so properties can name the rules (actions) that fired.
     mcrl2
-    uppaal
-  ];
+  ] ++ uppaal;
 
   shellHook = ''
     export PATH="${mcrl2Tools}:$PATH"
