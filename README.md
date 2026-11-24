@@ -19,6 +19,7 @@ This will build all dependencies and place them in the `nix-shell` PATH.
 - [examples/bigrapher](examples/bigrapher): models as `.big` files, for the `bigrapher` command.
 - [examples/ocaml](examples/ocaml): some of the same models written with the `bigraph` OCaml library.
 - [ast-sim](ast-sim): adaptive stress testing of `.big` models, as the `ast-sim` command. Examples: [examples/ast-sim](examples/ast-sim), and [examples/bigrapher/stpa-sec](examples/bigrapher/stpa-sec) for checking an STPA-Sec analysis.
+- [big2uppaal](big2uppaal): translates `.big` models into UPPAAL-SMC models and queries, as the `big2uppaal` command.
 
 ## References for Bigraph and BigraphER
 

@@ -1,5 +1,6 @@
 # Builds the Nix shell on Linux (x86_64, aarch64) and macOS, which also
-# builds ast-sim and runs its tests. Then checks that the tools are on PATH
+# builds ast-sim and big2uppaal and runs their tests. Then checks that the
+# tools are on PATH
 # and that a program using the bigraph library compiles and runs. Windows
 # users run the Linux shell under WSL2.
 name: nix-shell
@@ -74,9 +75,13 @@ jobs:
           # shellcheck disable=SC2016
           nix-shell --run '
             set -e
-            for tool in ocaml dune bigrapher ast-sim prism mcrl22lps pbessolve dot jq; do
+            for tool in ocaml dune bigrapher ast-sim big2uppaal prism mcrl22lps pbessolve dot jq; do
               command -v "$tool"
             done
+            # UPPAAL ships x86_64 binaries only (see nix/uppaal.nix).
+            if [ "${{ matrix.system }}" != aarch64-linux ]; then
+              command -v verifyta
+            fi
           '
 
       - name: Compile and run a program that uses bigraph

@@ -1,0 +1,70 @@
+# A small system for the tests: one node with two GPUs, drawn in two views.
+atomic ctrl Ein = 1;
+atomic ctrl Eout = 1;
+atomic ctrl Dp = 1;
+atomic ctrl Obs = 1;
+atomic ctrl Is = 1;
+atomic ctrl Slot = 1;
+atomic ctrl Worker = 1;
+
+fun ctrl GPU(idle_w, max_w, tau_s) = 0;
+ctrl TEE = 0;
+ctrl GPUTray = 0;
+ctrl GPUTrayRef = 0;
+ctrl Node = 0;
+ctrl Site = 0;
+ctrl Utility = 0;
+fun ctrl PDB(eta) = 0;
+fun ctrl UPS(eta, tau_s) = 0;
+fun ctrl Meter(period_s, sigma_w) = 0;
+fun ctrl Zone(dist_m) = 0;
+atomic fun ctrl Antenna(period_s, samples) = 0;
+atomic fun ctrl RfFloor(db) = 0;
+atomic fun ctrl Rf(idle_db, max_db) = 0;
+atomic fun ctrl Shield(db) = 0;
+fun ctrl Campaign(gap_s) = 0;
+ctrl Actual = 0;
+ctrl Other = 0;
+atomic fun ctrl Model(pre_ms, tok_ms, load, gpus) = 0;
+atomic fun ctrl Bench(p_lo, p_hi, r_lo, r_hi) = 0;
+atomic fun ctrl Item(node, index, tokens) = 0;
+
+float gpu_max_w = 1000.0;
+float dist_m = 10.0;
+float gap_s = 1.0;
+int item_node = 0;
+int other_gpus = 2;
+
+big gpu = GPU(100.0, gpu_max_w, 1.0).(Ein{rail} | TEE.Slot{job});
+big chips = GPUTray.(Is{t} | gpu | gpu);
+
+big campaign =
+  Campaign(gap_s).( Actual.(Model(1.0, 10.0, 0.5, 1) | Bench(10.0, 20.0, 10.0, 20.0) | Item(item_node, 0, 10.0))
+                | Other.Model(1.0, 20.0, 1.0, other_gpus) );
+
+big rest =
+    UPS(1.0, 2.0).(Ein{feed} | Eout{bus})
+  | Utility.Eout{feed}
+  | Meter(1.0, 5.0).Obs{feed}
+  | Zone(dist_m).(Antenna(1.0, 100.0) | RfFloor(20.0));
+
+big node_ok =
+  Node.( GPUTrayRef.(Is{t} | Ein{rail} | Slot{job})
+       | PDB(0.5).(Ein{bus} | Eout{rail})
+       | TEE.Worker{job} | TEE.campaign
+       | Rf(40.0, 50.0) | Shield(10.0) );
+
+# The Ref claims a data port the tray does not have.
+big node_bad =
+  Node.( GPUTrayRef.(Is{t} | Ein{rail} | Slot{job} | Dp{bus})
+       | PDB(0.5).(Ein{bus} | Eout{rail})
+       | TEE.Worker{job} | TEE.campaign
+       | Rf(40.0, 50.0) | Shield(10.0) );
+
+big sys = /t /rail /job /bus /feed (Site.(node_ok | rest) || chips);
+big bad = /t /rail /job /bus /feed (Site.(node_bad | rest) || chips);
+
+begin brs
+  init sys;
+  rules = [ ];
+end
