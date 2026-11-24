@@ -1,0 +1,8 @@
+(lang dune 3.0)
+
+(using menhir 2.1)
+
+(package
+ (name big2uppaal)
+ (synopsis
+  "UPPAAL-SMC models of side channels, generated from a bigraph of a compute module and its host site"))

@@ -1,0 +1,5 @@
+(test
+ (name test_big2uppaal)
+ (libraries big2uppaal alcotest)
+ (deps
+  (glob_files models/*.big)))
